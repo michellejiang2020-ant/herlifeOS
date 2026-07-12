@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>启思摘星 Her Life OS — 人生系统主理人计划</title>
+  
+  <!-- 1. 采用无拦截风险、全球极速 CDN 的静态 Tailwind CSS 样式表，彻底解决 iOS Safari 脚本封杀导致的白屏 -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- 2. 挂载 Alpine.js 用于交互 (带 defer 按序延迟启动) -->
+  
+
+  <!-- 3. 为静态 Tailwind 补充专属的 custom 调色板与 iPhone WebKit 兼容地基 -->
+  
+
+
+
+
+
+
+  <style>
+    /* v2 修改建议 */
+    html, body { background-color: #FBF7F0 !important; color: #2D221E; }
+    #about{min-height:80vh !important;}
+    .hero-overlay{background:linear-gradient(to bottom, rgba(253,251,247,0.80), rgba(253,251,247,0.55) 50%, rgba(253,251,247,0.92)) !important;}
+    @media(min-width:1024px){.hero-overlay{background:linear-gradient(to right, rgba(253,251,247,0.88), rgba(253,251,247,0.35) 55%, transparent) !important;}}
+    .f-modal-box{max-width:760px !important;}
+    /* 三次人生升级卡片质感 */
+    .upgrade-card{cursor:pointer;transition:transform .45s cubic-bezier(.22,1,.36,1), box-shadow .45s ease, border-color .45s ease, background-color .45s ease;}
+    .upgrade-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent 8%,#C5A880 50%,transparent 92%);opacity:0;transition:opacity .45s ease;}
+    .upgrade-card::after{content:'';position:absolute;inset:0;background:radial-gradient(120% 90% at 85% 0%, rgba(197,168,128,0.10), transparent 55%);opacity:0;transition:opacity .45s ease;pointer-events:none;}
+    .upgrade-card:hover{transform:translateY(-8px);border-color:#C5A880 !important;box-shadow:0 32px 64px -28px rgba(45,34,30,0.28), 0 0 0 1px rgba(197,168,128,0.30) !important;}
+    .upgrade-card:hover::before,.upgrade-card:hover::after{opacity:1;}
+    .upgrade-card:active{transform:translateY(-3px) scale(0.985);}
+    .upgrade-card .up-num{transition:color .45s ease, transform .45s cubic-bezier(.22,1,.36,1);}
+    .upgrade-card:hover .up-num{color:#E3CFA6 !important;transform:scale(1.12) translateY(-2px);}
+  </style>
+</head>
+<body class="bg-bgWarm text-primary font-sans selection:bg-accent-light selection:text-primary relative overflow-x-hidden">
+
+  <!-- ==========================================
+      👑 ALPINEJS 全局状态管理器 (合并官网、会员模拟、20题精细自测状态)
+      ========================================== -->
+  <div x-data="{
+    viewMode: 'visitor', // visitor: 品牌官网 | member: 会员后台 | quiz: 20题自测状态
+    mobileMenuOpen: false,
+    contactModalOpen: false,
+    
+    activeSystem: 'inner',
+    founderOpen: null,
+    
+    // 会员中心 Tab
+    memberTab: '自习室',
+    isPlaying: false,
+    audioProgress: 35,
+    myAssignment: '',
+    assignmentSubmitted: false,
+    
+    // 每日重启打卡
+    dailyEnergy: '⛅ 正常运行',
+    dailyIntention: '',
+    meditationChecked: false,
+    readingChecked: false,
+    reflectionChecked: false,
+    dailyLogSubmitted: false,
+    unlockedBadge: false,
+    
+    // 1对3创始陪伴舱：第4人是会员自己，前3人正是俱乐部的 3 位联合创始人！(Maggie, Michelle, Moe)
+    groupFlowers: { Maggie: 12, Michelle: 8, Moe: 15, You: 6 },
+    receivedFlowers: { Maggie: false, Michelle: false, Moe: false },
+    
+    // 🌟 星愿瓶 - 分类收集星星
+    starJar: {
+        checkin: 0,   // 打卡星 (dusty rose)
+        learn: 0,     // 学习星 (warm yellow)
+        feel: 0,      // 感触星 (sage green)
+        insight: 0    // 洞见星 (brown)
+    },
+    totalStars() {
+        return this.starJar.checkin + this.starJar.learn + this.starJar.feel + this.starJar.insight;
+    },
+    addStar(type) {
+        if (this.starJar[type] !== undefined) {
+            this.starJar[type]++;
+            this.saveStarJar();
+            this.spawnStar(type);
+        }
+    },
+    saveStarJar() {
+        try { localStorage.setItem('hlos_starjar', JSON.stringify(this.starJar)); } catch(e){}
+    },
+    loadStarJar() {
+        try {
+            const s = localStorage.getItem('hlos_starjar');
+            if (s) this.starJar = JSON.parse(s);
+        } catch(e){}
+    },
+    spawnStar(type) {
+        const colors = { checkin:'#EFA6B8', learn:'#F0C95E', feel:'#9FCBA6', insight:'#A6B6E6' };
+        const jar = document.getElementById('star-jar-stars');
+        if (!jar) return;
+        const star = document.createElement('div');
+        star.textContent = '★';
+        star.style.cssText = `position:absolute;color:${colors[type]};text-shadow:0 -1px 0 rgba(255,255,255,0.5),0 1.5px 2px rgba(90,60,40,0.3);font-size:${14+Math.random()*8}px;left:${15+Math.random()*70}%;top:-20px;opacity:0;transition:all 1.2s cubic-bezier(.3,.7,.4,1);pointer-events:none;`;
+        jar.appendChild(star);
+        requestAnimationFrame(() => {
+            star.style.top = `${40+Math.random()*50}%`;
+            star.style.opacity = '1';
+        });
+    },
+    encourageText() {
+        const t = this.totalStars();
+        if (t === 0) return '你的星空，正在等待第一颗星 ✦';
+        if (t < 5) return '星星开始亮起来了，继续呀 ✦';
+        if (t < 15) return '你的星空越来越亮了 ✦';
+        if (t < 30) return '好闪耀！你在认真经营自己的人生 ✦';
+        return '满天星光，都是你努力的痕迹 ✦';
+    },
+    
+    // ==========================================
+    // 🌸 20题人生系统精细自测专属 Alpine 状态与数据
+    // ==========================================
+    quizIndex: 0,
+    quizFinished: false,
+    quizAnswers: [],
+    quizScores: { inner: 0, path: 0, safety: 0 },
+    quizCountMap: { inner: 7, path: 7, safety: 6 },
+    quizKeyMap: { inner: '内在系统', path: '路径系统', safety: '安全系统' },
+    analysisResult: { typeName: '', typeIcon: '', summary: '', body: '', invite: '' },
+    
+    // 经过柔化重塑、充满温度的 20 题温润觉察题库
+    questions: [
+        // ==================== 内在系统 (inner: 7题) ====================
+        { 
+            text: '在独处或闲下来的时候，我能安享片刻的平静，而不会总觉得有股焦虑催着自己去忙点什么。', 
+            hint: '是否一停下来不忙碌，就会产生“虚度光阴”的自责与负罪感？',
+            type: 'inner', 
+            category: '内在感知' 
+        },
+        { 
+            text: '当情绪低落或波动时，我能温柔地抱抱自己，而不是责怪自己“太敏感”或“不够坚强”。', 
+            hint: '情绪低落时，习惯性选择理智压抑、逃避它，或者责备自己不够坚强。',
+            type: 'inner', 
+            category: '情绪自洽' 
+        },
+        { 
+            text: '面对身边的声音、期待或评判，我有一道温和的保护网，不太会轻易怀疑自己的价值。', 
+            hint: '经常因为伴侣、同事或老板的一句负面反馈，陷入整天的自我反省与心神内耗。',
+            type: 'inner', 
+            category: '心理边界' 
+        },
+        { 
+            text: '在感到累的时候，我能坦然、不带负罪感地拒绝一些请求，不再为了“懂事”一味迁就别人。', 
+            hint: '即使已经精疲力竭，在面对无理要求时，也会因为面子或责任勉强答应、事后后悔。',
+            type: 'inner', 
+            category: '自我主权' 
+        },
+        { 
+            text: '如果生活突然出现意外、计划被打乱，我能允许自己先有个缓冲，然后慢慢找回生活的呼吸感。', 
+            hint: '哪怕遇到一个非常微小的突发插曲，你整周的精神和生活秩序都会随之脱轨吗？',
+            type: 'inner', 
+            category: '系统弹性' 
+        },
+        { 
+            text: '我生命里有属于自己的“安全树屋”——哪怕只是一个小小爱好，能让系统真正蓄满电力。', 
+            hint: '你是否拥有不带任何目的、单纯因为自我喜悦而呼吸和放松的时间？',
+            type: 'inner', 
+            category: '能量补给' 
+        },
+        { 
+            text: '当身体发出疲惫、紧绷的信号时，我能坦然地允许自己按下暂停键好好休息，不觉得这是“偷懒”。', 
+            hint: '失眠频发、肩颈酸痛，但你依然对自己说“咬牙撑住，忙完这段时间再说”。',
+            type: 'inner', 
+            category: '身心链接' 
+        },
+        
+        // ==================== 路径系统 (path: 7题) ====================
+        { 
+            text: '我对未来 3-5 年的生活状态，有比较清晰的想象和可落地的计划。', 
+            hint: '你是否感觉一直在被生活拖着走、被动“应答”生活，而缺乏掌控方向的踏实感？',
+            type: 'path', 
+            category: '成长愿景' 
+        },
+        { 
+            text: '在现在的日常里，我能隐约感受到自我的成长和内在价值，而不仅是机械地在打卡上班。', 
+            hint: '每天都在从事可复制、机械式的空转劳作，内心逐渐被无意义感吞噬、感到疲惫。',
+            type: 'path', 
+            category: '智性成长' 
+        },
+        { 
+            text: '除了手头的主线工作，我内心也渴望、或正在尝试摸索一些真正有热情、能长期生长的“小可能”。', 
+            hint: '想过开辟新可能，但常因“不知能做什么、怕走错路、没有精力”而停在原地。',
+            type: 'path', 
+            category: '第二曲线' 
+        },
+        { 
+            text: '面对年龄压力或各种社会竞争，我内心深处依然保有一份底气，相信自己独特的、带不走的核心特质。', 
+            hint: '对未来的变数感到极度焦虑，总觉得缺乏一项“随身携带、不依附平台”的核心手艺。',
+            type: 'path', 
+            category: '核心能力' 
+        },
+        { 
+            text: '在被琐事填满的生活中，我依然能为自己保留哪怕一小段不被打扰的时光，用来吸收新知或静静思考。', 
+            hint: '整天被工作群组和零散家务压榨干所有精力，根本抽不出半个小时进行高质量的自我迭代。',
+            type: 'path', 
+            category: '精力隔离' 
+        },
+        { 
+            text: '我身边的朋友和社交圈，能带给我温和的滋养和有深度的交流，而不是让我在聚会完反而更觉累心。', 
+            hint: '社交常常沦为无止境的八卦、攀比或低能倾听，聚会结束后反而倍感空虚。 ',
+            type: 'path', 
+            category: '成长圈层' 
+        },
+        { 
+            text: '在面对人生中重要的关口时，我能够静下心来听一听内在的声音，做出真正不违背自己心愿的选择。', 
+            hint: '换工作、买房、结婚...每一次选择，是因为“大家都是这样”，还是出自你心？',
+            type: 'path', 
+            category: '决策主权' 
+        },
+        
+        // ==================== 安全系统 (safety: 6题) ====================
+        { 
+            text: '对于自己的财务状况，我心里有一本清爽的账，清楚知道自己手里握着多少底牌、每月流入流出多少。', 
+            hint: '潜意识有些害怕看账单，对具体开支和储蓄增减缺乏精准规划，选择闭上眼模糊应付。',
+            type: 'safety', 
+            category: '财务觉知' 
+        },
+        { 
+            text: '即使当前的收入被迫按下暂停，我拥有的备用保障，也足够支撑我过好接下来半年体面、温饱的生活。', 
+            hint: '一旦工作停摆、项目中止，存款数字带来的恐慌是否会让你立刻感到无法呼吸？',
+            type: 'safety', 
+            category: '风险冗余' 
+        },
+        { 
+            text: '我为自己或家庭构建了最基础的安全防护（比如合理的健康险或流动资产），能够从容面对可能的变故。', 
+            hint: '内心总是害怕生病，害怕自己发生变故后会拖累家庭，却因为拖延没有做出科学规划。',
+            type: 'safety', 
+            category: '底层防线' 
+        },
+        { 
+            text: '我与物质的关系是放松而理智的，极少在心情沮丧或焦虑时，通过报复性消费来释放压力。', 
+            hint: '工作委屈、深夜难受时，总想通过报复性买贵衣服、海量网购或暴饮暴食来寻找代偿。',
+            type: 'safety', 
+            category: '消费哲学' 
+        },
+        { 
+            text: '在面对重要、或大额的财务分配决策时，我能够坦诚表达内心主张，拥有一份平等的、说“无悔决策”的底气。', 
+            hint: '因为经济权相对缺失或让渡，在面临财务主张时常感到底气不足、习惯妥协迁就。',
+            type: 'safety', 
+            category: '物质底牌' 
+        },
+        { 
+            text: '账户里存留的数字和安全壁垒，能带给我安然入睡的定力，不会经常为未来的生活感到恐慌不安。', 
+            hint: '经常因数字没达到期望而产生匮乏感，甚至无法安然入睡，对衰老或意外始终感到惊恐。',
+            type: 'safety', 
+            category: '财务心理' 
+        }
+    ],
+
+    nextQuiz(score, type) {
+        this.quizAnswers[this.quizIndex] = { score, type };
+        if (this.quizIndex < this.questions.length - 1) {
+            this.quizIndex++;
+        } else {
+            this.calculateQuizScores();
+            this.analysisResult = this.getFinalAnalysis();
+            this.quizFinished = true;
+        }
+    },
+    prevQuiz() {
+        if (this.quizIndex > 0) {
+            this.quizIndex--;
+        }
+    },
+    calculateQuizScores() {
+        this.quizScores = { inner: 0, path: 0, safety: 0 };
+        this.quizAnswers.forEach(ans => {
+            if (ans) {
+                this.quizScores[ans.type] += ans.score;
+            }
+        });
+    },
+    getFinalAnalysis() {
+        let pct = {
+            inner: Math.round(this.quizScores.inner / (this.quizCountMap.inner * 5) * 100),
+            path: Math.round(this.quizScores.path / (this.quizCountMap.path * 5) * 100),
+            safety: Math.round(this.quizScores.safety / (this.quizCountMap.safety * 5) * 100)
+        };
+        let vals = [pct.inner, pct.path, pct.safety];
+        let spread = Math.max(vals[0], vals[1], vals[2]) - Math.min(vals[0], vals[1], vals[2]);
+        let lowest = 'inner';
+        if (pct.path < pct[lowest]) lowest = 'path';
+        if (pct.safety < pct[lowest]) lowest = 'safety';
+
+        if (spread <= 12) {
+            return {
+                typeName: '平衡生长型',
+                typeIcon: '☀️',
+                summary: '你的人生系统已经具备较好的稳定性与韧性。',
+                body: '内在、路径、安全整体均衡。你能够兼顾内在感受、成长方向与现实安全感，在面对生活变化时拥有相对从容的应对能力。未来的重点不再是修补短板，而是让已有的优势持续生长，逐渐从“回应生活”走向“创造生活”。',
+                invite: '☀️ 人生正在邀请你，让已有的优势持续生长，从回应生活，慢慢走向创造生活。'
+            };
+        } else if (lowest === 'inner') {
+            return {
+                typeName: '责任承载型',
+                typeIcon: '✦',
+                summary: '你的人生系统整体运转稳定，但长期承担较多责任，内在能量需要被优先关注与补给。',
+                body: '你拥有很强的责任感与行动力，习惯照顾家庭、工作与身边的人，也总希望把事情做好。只是长时间把注意力放在外界以后，你可能已经很久没有认真照顾过自己的情绪与需求。未来最值得投入的，不是变得更努力，而是学会把自己也放回人生的重要位置。',
+                invite: '你的内在系统正在邀请你，把更多关注重新带回自己。'
+            };
+        } else if (lowest === 'path') {
+            return {
+                typeName: '生长探索型',
+                typeIcon: '✦',
+                summary: '你的人生系统已经具备良好的基础，但未来方向与成长路径仍有进一步探索和拓展的空间。',
+                body: '你已经完成了很多人生角色的建设。但内心深处，也开始出现新的提问：我真正想要的是什么？未来的人生还能有哪些可能？这不是迷茫，而是成长开始发生的信号。未来最值得投入的，是重新连接自己的热情、兴趣与长期成长方向。',
+                invite: '你的路径系统正在邀请你，探索下一阶段的人生方向。'
+            };
+        } else {
+            return {
+                typeName: '安全筑基型',
+                typeIcon: '✦',
+                summary: '你的人生系统整体向好，但安全感更多依赖外部条件，安全系统值得被优先关注与建设。',
+                body: '你拥有不错的成长动力与生活热情。但在面对未来的不确定性时，仍然会希望拥有更多底气与选择权。安全感并不仅仅来自账户里的数字，它更来自于：对资源的管理能力、对风险的理解能力，以及对人生选择的自主权。未来最值得投入的，是为自己建立更稳定、更从容的安全底盘。',
+                invite: '你的安全系统正在邀请你，为未来建立更稳定的底气与选择权。'
+            };
+        }
+    },
+
+    sendFlower(member) {
+      this.groupFlowers[member]++;
+    },
+    receiveFlower(name) {
+      if (!this.receivedFlowers[name]) {
+        this.receivedFlowers[name] = true;
+        this.addStar('feel');
+      }
+    }
+  }"
+  x-init="loadStarJar(); setInterval(() => { if (isPlaying) { audioProgress = audioProgress >= 100 ? 0 : audioProgress + 1 } }, 1000)"
+  class="min-h-screen relative overflow-hidden">
+
+    <!-- ==========================================
+        💎 1. 顶部智性导航栏
+        ========================================== -->
+    <header class="sticky top-0 z-40 backdrop-blur-md bg-white/80 border-b border-[#EBE4DC]/80 transition-all duration-300">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        
+        <div class="flex flex-col cursor-pointer" @click="viewMode = 'visitor'">
+          <span class="font-serif text-lg tracking-[0.25em] text-custom-primary font-semibold">启思摘星</span>
+          <span class="text-[10px] tracking-[0.3em] text-[#8A7A71] uppercase mt-0.5">Her Life OS</span>
+        </div>
+
+        <nav class="hidden md:flex items-center space-x-8">
+          <a href="#about" @click="viewMode = 'visitor'" class="text-sm tracking-widest text-custom-primary hover:text-custom-accent transition-colors">探索计划</a>
+          <a href="#systems" @click="viewMode = 'visitor'" class="text-sm tracking-widest text-custom-primary hover:text-custom-accent transition-colors">三大系统</a>
+          <a href="#offer" @click="viewMode = 'visitor'" class="text-sm tracking-widest text-custom-primary hover:text-custom-accent transition-colors">体验课 ¥29.9</a>
+
+          <div class="h-6 w-px bg-[#EBE4DC]"></div>
+          
+          <a
+            href="member.html"
+            class="px-4 py-2 rounded-full text-xs tracking-widest transition-all duration-300 flex items-center space-x-1.5 border cursor-pointer bg-custom-accent-light border-[#EBE4DC]"
+          >
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <span>会员模拟后台</span>
+          </a>
+
+          <button 
+            @click="contactModalOpen = true"
+            class="px-5 py-2 rounded-full text-xs tracking-widest bg-gradient-to-r from-[#C5A880] to-[#B39369] text-white hover:opacity-95 transition-opacity cursor-pointer font-bold"
+          >
+            咨询主理人
+          </button>
+        </nav>
+
+        <div class="flex items-center space-x-3 md:hidden">
+          <a href="member.html" class="p-2 rounded-full bg-[#F4EFEA] text-xs">
+            <svg width="14" height="14" fill="none" stroke="#2D221E" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+          </a>
+          <button @click="mobileMenuOpen = !mobileMenuOpen" class="p-2 text-custom-primary focus:outline-none">
+            <span class="text-lg">☰</span>
+          </button>
+        </div>
+      </div>
+
+      <div x-show="mobileMenuOpen" @click.away="mobileMenuOpen = false" class="md:hidden bg-custom-warm border-b border-[#EBE4DC] px-6 py-6 space-y-4 animate-fadeIn" style="display: none;">
+        <a href="#about" @click="mobileMenuOpen = false; viewMode = 'visitor'" class="block w-full text-left text-sm tracking-widest py-2 text-custom-primary">探索计划</a>
+        <a href="#systems" @click="mobileMenuOpen = false; viewMode = 'visitor'" class="block w-full text-left text-sm tracking-widest py-2 text-custom-primary">三大系统</a>
+        <a href="#offer" @click="mobileMenuOpen = false; viewMode = 'visitor'" class="block w-full text-left text-sm tracking-widest py-2 text-custom-primary-light">体验公开课 (¥29.9)</a>
+        <hr class="border-[#EBE4DC]" />
+        <a 
+          href="member.html"
+          class="w-full py-2.5 rounded-full text-xs bg-custom-primary text-white flex items-center justify-center space-x-2"
+        >
+          <span>切换至会员后台</span>
+        </a>
+        <button 
+          @click="mobileMenuOpen = false; contactModalOpen = true"
+          class="w-full py-2.5 rounded-full text-xs border border-custom-accent text-custom-accent text-center font-bold"
+        >
+          咨询主理人
+        </button>
+      </div>
+    </header>
+
+    <!-- ==========================================
+        🌟 视图 1: 公开官网品牌 Landing Page
+        ========================================== -->
+    <main x-show="viewMode === 'visitor'" class="relative z-10 animate-fadeIn">
+      
+      <!-- 1. HERO SECTION -->
+      <section id="about" class="relative min-h-[88vh] flex items-center justify-center px-4 sm:px-6 lg:px-8 py-16 overflow-hidden">
+        <div class="absolute inset-0 z-0">
+          <img 
+            src="images/img01.jpg" 
+            alt="启思摘星 · 人生系统主理人计划 Her Life OS" 
+            class="w-full h-full object-cover object-right lg:object-center"
+            onerror="this.style.display='none'; document.getElementById('hero-fallback-css').classList.remove('hidden')"
+          />
+          <div id="hero-fallback-css" class="hidden absolute inset-0 bg-gradient-to-tr from-[#FAF5EE] via-[#F5ECE0] to-[#FAF5EE]"></div>
+          <div class="hero-overlay absolute inset-0"></div>
+        </div>
+
+        <div class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
+          <div class="lg:col-span-8 flex flex-col justify-center space-y-10">
+            <div class="space-y-5">
+              <h2 class="eyebrow-line text-xs font-serif tracking-[0.3em] text-custom-accent uppercase font-bold">启思摘星 · 人生主理人计划</h2>
+              <h1 class="text-5xl sm:text-6xl lg:text-7xl font-serif text-custom-primary tracking-tight leading-[1.1] font-light">
+                Her Life OS
+              </h1>
+              <p class="text-xl sm:text-2xl text-custom-primary-light font-serif font-light leading-relaxed pt-2">
+                人生不会自动变好。<br class="hidden sm:inline" />
+                但你可以选择，找回你的主理权。
+              </p>
+              <div class="w-16 h-px bg-gradient-to-r from-custom-accent to-transparent mt-2"></div>
+            </div>
+
+            <div class="pt-2">
+              <button 
+                @click="viewMode = 'quiz'; quizIndex = 0; quizFinished = false; quizAnswers = []; quizScores = { inner: 0, path: 0, safety: 0 }; window.scrollTo(0,0)"
+                class="group bg-custom-primary text-white px-10 py-4 rounded-full text-sm tracking-widest font-medium hover:bg-black transition-all duration-300 shadow-md inline-flex items-center justify-center space-x-2 cursor-pointer focus:outline-none"
+              >
+                <span>开启我的觉察之旅</span>
+                <span class="text-xs">➔</span>
+              </button>
+            </div>
+          </div>
+          <div class="hidden lg:block lg:col-span-4 h-full"></div>
+        </div>
+      </section>
+
+      <!-- 2. 💡 INTERACTIVE DIAGNOSTIC -->
+      <section id="resonance" class="py-24 bg-custom-beige/50 border-y border-[#EBE4DC]">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-12">
+          <div class="space-y-4">
+            <span class="eyebrow-line text-xs tracking-[0.25em] text-custom-accent uppercase font-semibold">If You Feel The Same</span>
+            <h2 class="text-3xl sm:text-4xl font-serif text-custom-primary">你是不是也有这样的时刻？</h2>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
+            <div class="bg-white/80 rounded-2xl border border-[#EBE4DC] px-6 py-5 text-sm sm:text-base text-custom-primary-light leading-relaxed shadow-sm">明明一天没有发生什么特别的事，却总觉得累。</div>
+            <div class="bg-white/80 rounded-2xl border border-[#EBE4DC] px-6 py-5 text-sm sm:text-base text-custom-primary-light leading-relaxed shadow-sm">明明一直在照顾家人、孩子、工作和生活，却很久没有认真照顾过自己。</div>
+            <div class="bg-white/80 rounded-2xl border border-[#EBE4DC] px-6 py-5 text-sm sm:text-base text-custom-primary-light leading-relaxed shadow-sm">想改变，却不知道该从哪里开始。</div>
+            <div class="bg-white/80 rounded-2xl border border-[#EBE4DC] px-6 py-5 text-sm sm:text-base text-custom-primary-light leading-relaxed shadow-sm">努力了这么多年，却依然缺少一种踏实而稳定的掌控感。</div>
+          </div>
+
+          <div class="space-y-6 text-center font-serif text-custom-primary leading-loose text-base sm:text-lg">
+            <p>后来我们慢慢发现：<br/>很多时候，不是我们不够努力，<br/>也不是我们不够优秀。</p>
+            <p class="font-semibold">而是我们太久没有停下来，认真看看自己。</p>
+          </div>
+
+          <div class="bg-white rounded-[32px] border border-[#EBE4DC] p-8 sm:p-10 shadow-xl space-y-6 max-w-2xl mx-auto">
+            <p class="text-sm sm:text-base text-custom-primary-light leading-relaxed">
+              如果你愿意，不妨花 5 分钟时间，<br class="hidden sm:inline"/>给自己一次重新认识自己的机会。<br/>看看此刻的自己，正处于怎样的人生状态。
+            </p>
+            <button 
+              @click="viewMode = 'quiz'; quizIndex = 0; quizFinished = false; quizAnswers = []; quizScores = { inner: 0, path: 0, safety: 0 }; window.scrollTo(0,0)"
+              class="bg-custom-primary text-white px-10 py-4 rounded-full text-sm tracking-widest font-medium hover:bg-black transition-all duration-300 shadow-md inline-flex items-center space-x-2 cursor-pointer"
+            >
+              <span>开启我的觉察之旅</span>
+              <span class="text-xs">➔</span>
+            </button>
+            <p class="text-xs text-[#A6978C]">本测评约需 5 分钟完成 · 通过 20 道题，了解你的内在系统、路径系统与安全系统状态</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2.5 🌱 起点：为什么会有 Her Life OS -->
+      <section id="origin" class="py-24 max-w-2xl mx-auto px-4 sm:px-6">
+        <img src="images/img02.jpg" alt="Our Story - 为什么会有 Her Life OS" class="w-full h-auto rounded-2xl shadow-sm border border-[#EBE4DC]"/>
+      </section>
+
+      <!-- 3. 🧩 CORE METHODOLOGY -->
+      <section id="systems" class="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center space-y-4 mb-16">
+          <span class="eyebrow-line text-xs tracking-[0.25em] text-custom-accent uppercase font-semibold">The Blueprint</span>
+          <h2 class="text-3xl sm:text-4xl font-serif text-custom-primary">重构可长期运转的“人生系统”</h2>
+          <p class="text-sm text-custom-primary-light max-w-2xl mx-auto leading-relaxed">
+            人生真正长期稳定地运转，不是靠某一种能力，而是三套彼此支撑的底层系统。<br/>三位分别深耕心理、职涯、财商领域的同行者，将陪你一起打理这三大底层系统，慢慢长出属于你自己的生命结构。
+          </p>
+        </div>
+
+        
+        <!-- 三大系统 - 全部展示 -->
+        <div class="space-y-8">
+
+          <!-- 分隔线标签 -->
+          <div class="flex items-center gap-4 my-2">
+            <div class="flex-1 h-px bg-[#EBE4DC]"></div>
+            <span class="text-xs tracking-[0.18em] text-custom-accent uppercase font-semibold">内在系统</span>
+            <div class="flex-1 h-px bg-[#EBE4DC]"></div>
+          </div>
+          <div class="bg-white rounded-2xl border border-[#EBE4DC] shadow-sm p-6 sm:p-10">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center animate-fadeIn">
+            <div class="lg:col-span-7 space-y-6">
+              <div class="space-y-2">
+                <div class="text-xs tracking-[0.15em] text-custom-accent font-semibold uppercase">幸福与稳定</div>
+                <h3 class="text-2xl sm:text-3xl font-serif text-custom-primary font-semibold">内在系统｜幸福力养成</h3>
+                <p class="text-xs text-[#8A7A71]">幸福不是偶然，而是一种可以培养的能力</p>
+              </div>
+              <p class="text-sm sm:text-base text-custom-primary-light leading-relaxed font-light">
+                很多时候，我们真正需要的，不是变得更坚强，而是拥有一个能够接住自己的内在系统。在这里，我们会陪你慢慢理解自己的情绪，照顾自己的需要，建立更稳定的内在支撑，让幸福感成为一种可以持续生长的力量。
+              </p>
+              <div class="space-y-3">
+                <h4 class="text-xs uppercase tracking-widest font-semibold text-custom-primary">成长重点</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-custom-primary-light">
+                  <div class="flex items-center space-x-2"><span class="text-custom-accent">✓</span><span>情绪稳定力</span></div>
+                  <div class="flex items-center space-x-2"><span class="text-custom-accent">✓</span><span>自我觉察力</span></div>
+                  <div class="flex items-center space-x-2"><span class="text-custom-accent">✓</span><span>边界构建力</span></div>
+                  <div class="flex items-center space-x-2"><span class="text-custom-accent">✓</span><span>幸福感知力</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="lg:col-span-5 bg-[#FAF8F5] rounded-xl border border-[#EBE4DC] p-6 space-y-6">
+              <div class="text-xs uppercase tracking-widest text-custom-accent font-semibold text-center border-b border-[#EBE4DC] pb-3">内在系统主理人</div>
+              <div>
+                  <div class="overflow-hidden rounded-lg border border-[#EBE4DC] w-full mb-3">
+                    <img src="images/img03.jpg" alt="Maggie Lin" class="w-full h-auto display-block"/>
+                  </div>
+                  <div class="font-serif text-base font-bold text-custom-primary">Maggie Lin</div>
+                  <div class="text-xs text-custom-accent font-light mt-0.5">幸福篇主理人 / 心理探索者</div>
+                </div>
+              <p class="text-xs text-custom-primary-light leading-relaxed font-light bg-white/70 p-4 rounded-lg border border-[#EBE4DC]">
+                “我们不是来上课的，我是来陪你将那些你早就知道的道理，一点点轻柔地、无压力地过进你的日常生活里。”
+              </p>
+            </div>
+          </div>
+          </div>
+
+          <div class="flex items-center gap-4 my-2">
+            <div class="flex-1 h-px bg-[#EBE4DC]"></div>
+            <span class="text-xs tracking-[0.18em] text-custom-accent uppercase font-semibold">路径系统</span>
+            <div class="flex-1 h-px bg-[#EBE4DC]"></div>
+          </div>
+          <div class="bg-white rounded-2xl border border-[#EBE4DC] shadow-sm p-6 sm:p-10">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center animate-fadeIn">
+            <div class="lg:col-span-7 space-y-6">
+              <div class="space-y-2">
+                <div class="text-xs tracking-[0.15em] text-custom-accent font-semibold uppercase">职涯成长与人生路径</div>
+                <h3 class="text-2xl sm:text-3xl font-serif text-custom-primary font-semibold">路径系统｜成长力升级</h3>
+                <p class="text-xs text-[#8A7A71]">成长不是更努力，而是找到真正适合自己的方向</p>
+              </div>
+              <p class="text-sm sm:text-base text-custom-primary-light leading-relaxed font-light">
+                很多时候，我们真正需要的，不是更努力地向前，而是找到真正适合自己的成长方向。在这里，我们会陪你重新认识自己的优势、热爱与可能性，建立属于自己的成长路径，让努力真正产生长期价值。
+              </p>
+              <div class="space-y-3">
+                <h4 class="text-xs uppercase tracking-widest font-semibold text-custom-primary">成长重点</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-custom-primary-light">
+                  <div class="flex items-center space-x-2"><span class="text-custom-accent">✓</span><span>人生定位力</span></div>
+                  <div class="flex items-center space-x-2"><span class="text-custom-accent">✓</span><span>决策判断力</span></div>
+                  <div class="flex items-center space-x-2"><span class="text-custom-accent">✓</span><span>成长规划力</span></div>
+                  <div class="flex items-center space-x-2"><span class="text-custom-accent">✓</span><span>第二曲线力</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="lg:col-span-5 bg-[#FAF8F5] rounded-xl border border-[#EBE4DC] p-6 space-y-6">
+              <div class="text-xs uppercase tracking-widest text-custom-accent font-semibold text-center border-b border-[#EBE4DC] pb-3">路径系统主理人</div>
+              <div>
+                  <div class="overflow-hidden rounded-lg border border-[#EBE4DC] w-full mb-3">
+                    <img src="images/img04.jpg" alt="Michelle Jiang" class="w-full h-auto display-block"/>
+                  </div>
+                  <div class="font-serif text-base font-bold text-custom-primary">Michelle Jiang</div>
+                  <div class="text-xs text-custom-accent font-light mt-0.5">职涯篇主理人 / 商业成长同行者</div>
+                </div>
+              <p class="text-xs text-custom-primary-light leading-relaxed font-light bg-white/70 p-4 rounded-lg border border-[#EBE4DC]">
+                “成长不是不断证明自己，而是越来越知道，什么才真正值得投入。”
+              </p>
+            </div>
+          </div>
+          </div>
+
+          <div class="flex items-center gap-4 my-2">
+            <div class="flex-1 h-px bg-[#EBE4DC]"></div>
+            <span class="text-xs tracking-[0.18em] text-custom-accent uppercase font-semibold">安全系统</span>
+            <div class="flex-1 h-px bg-[#EBE4DC]"></div>
+          </div>
+          <div class="bg-white rounded-2xl border border-[#EBE4DC] shadow-sm p-6 sm:p-10">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center animate-fadeIn">
+            <div class="lg:col-span-7 space-y-6">
+              <div class="space-y-2">
+                <div class="text-xs tracking-[0.15em] text-custom-accent font-semibold uppercase">财务与底气</div>
+                <h3 class="text-2xl sm:text-3xl font-serif text-custom-primary font-semibold">安全系统｜建立人生底气</h3>
+                <p class="text-xs text-[#8A7A71]">安全感，不只是账户里的数字，更是面对未来时，那份从容选择的底气</p>
+              </div>
+              <p class="text-sm sm:text-base text-custom-primary-light leading-relaxed font-light">
+                很多时候，我们真正需要的，不是赚更多的钱，而是拥有面对未来的底气与选择。在这里，我们会陪你重新建立对金钱、风险与未来选择的理解，让安全感不再只来自账户里的数字，而来自你面对生活时越来越稳定的掌控感。
+              </p>
+              <div class="space-y-3">
+                <h4 class="text-xs uppercase tracking-widest font-semibold text-custom-primary">成长重点</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-custom-primary-light">
+                  <div class="flex items-center space-x-2"><span class="text-custom-accent">✓</span><span>财务思维力</span></div>
+                  <div class="flex items-center space-x-2"><span class="text-custom-accent">✓</span><span>风险规划力</span></div>
+                  <div class="flex items-center space-x-2"><span class="text-custom-accent">✓</span><span>财富管理力</span></div>
+                  <div class="flex items-center space-x-2"><span class="text-custom-accent">✓</span><span>人生选择力</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="lg:col-span-5 bg-[#FAF8F5] rounded-xl border border-[#EBE4DC] p-6 space-y-6">
+              <div class="text-xs uppercase tracking-widest text-custom-accent font-semibold text-center border-b border-[#EBE4DC] pb-3">安全系统主理人</div>
+              <div>
+                  <div class="overflow-hidden rounded-lg border border-[#EBE4DC] w-full mb-3">
+                    <img src="images/img05.jpg" alt="Moe Zhang" class="w-full h-auto display-block"/>
+                  </div>
+                  <div class="font-serif text-base font-bold text-custom-primary">Moe Zhang</div>
+                  <div class="text-xs text-custom-accent font-light mt-0.5">安全系统主理人｜财商规划师</div>
+                </div>
+              <p class="text-xs text-custom-primary-light leading-relaxed font-light bg-white/70 p-4 rounded-lg border border-[#EBE4DC]">
+                “真正的安全感，不是拥有多少财富，而是始终保有选择自己人生的底气。”
+              </p>
+            </div>
+          </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- 4. 🌱 成长时间轴：生命的三次升级 -->
+      <section class="py-20 bg-bgBeige/30 border-t border-[#EBE4DC]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="text-center space-y-4 mb-16">
+            <span class="eyebrow-line text-xs tracking-[0.25em] text-[#C5A880] uppercase font-semibold">The Growth Journey</span>
+            <h2 class="text-3xl font-serif text-[#2D221E]">每一次成长，都始于三次人生升级</h2>
+            <p class="text-sm text-[#8A7A71] max-w-xl mx-auto leading-relaxed">
+              在人生主理人计划里，从看见自己，到建立系统，再到成为自己人生的主理人。
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- 1.0 自我探索 -->
+            <div class="upgrade-card bg-white rounded-xl border border-[#EBE4DC] p-8 space-y-4 relative overflow-hidden group">
+              <div class="up-num absolute top-0 right-0 p-4 font-mono text-4xl text-[#F4EFEA] font-bold">1.0</div>
+              <div class="text-xs uppercase tracking-widest text-custom-accent">成为自己的观察者｜1-3个月</div>
+              <h3 class="text-xl font-serif font-bold text-custom-primary">自我探索</h3>
+              <p class="text-xs text-custom-primary-light leading-relaxed">
+                成长的起点，不是改变，而是觉察。重新认识自己的情绪、价值观、优势与需求，看见那些长期被忽略的内在声音。当你开始理解自己，人生才真正开始发生改变。
+              </p>
+            </div>
+            <!-- 2.0 自我赋能 -->
+            <div class="upgrade-card bg-white rounded-xl border border-[#EBE4DC] p-8 space-y-4 relative overflow-hidden group">
+              <div class="up-num absolute top-0 right-0 p-4 font-mono text-4xl text-[#F4EFEA] font-bold">2.0</div>
+              <div class="text-xs uppercase tracking-widest text-custom-accent">建立自己的人生系统｜4-8个月</div>
+              <h3 class="text-xl font-serif font-bold text-custom-primary">自我赋能</h3>
+              <p class="text-xs text-custom-primary-light leading-relaxed">
+                仅仅看见问题还不够。我们需要学习如何照顾自己，管理情绪、规划成长、建立安全感，让人生从依靠意志力硬撑，逐渐转向依靠系统运转。当系统建立起来，人生会变得更加稳定而有力量。
+              </p>
+            </div>
+            <!-- 3.0 自我创造 -->
+            <div class="upgrade-card bg-white rounded-xl border border-[#EBE4DC] p-8 space-y-4 relative overflow-hidden group">
+              <div class="up-num absolute top-0 right-0 p-4 font-mono text-4xl text-[#F4EFEA] font-bold">3.0</div>
+              <div class="text-xs uppercase tracking-widest text-custom-accent">成为自己的人生主理人｜9个月+</div>
+              <h3 class="text-xl font-serif font-bold text-custom-primary">自我创造</h3>
+              <p class="text-xs text-custom-primary-light leading-relaxed">
+                成长的最终目的，不是成为别人期待的样子。而是拥有更多选择权与创造力，主动决定自己想过怎样的人生。从回应生活，慢慢走向创造生活。
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4.5 🏡 Founders Cabin｜创始人小屋 -->
+      <section id="founders" class="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center space-y-4 mb-16">
+          <span class="eyebrow-line text-xs tracking-[0.25em] text-custom-accent uppercase font-semibold">Founders Cabin</span>
+          <h2 class="text-3xl sm:text-4xl font-serif text-custom-primary">创始人小屋</h2>
+          <p class="text-sm text-custom-primary-light max-w-xl mx-auto leading-relaxed">
+            在这里，你会认识三位同行者。<br/>每一套人生系统，都来自她们真实走过的人生。
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <!-- Maggie 卡片 -->
+          <div class="bg-white rounded-2xl border border-[#EBE4DC] p-8 text-center space-y-4 shadow-sm hover:border-[#C5A880] transition-colors duration-300">
+            <div class="w-24 h-24 rounded-full overflow-hidden border-2 border-white shadow-md mx-auto bg-accent-light">
+              <img src="images/img06.jpg" alt="Maggie Lin" class="w-full h-full object-cover object-top" onerror="this.src='https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200'"/>
+            </div>
+            <div>
+              <div class="font-serif text-xl font-bold text-custom-primary">Maggie</div>
+              <div class="text-xs text-custom-accent mt-1">内在系统陪伴者</div>
+            </div>
+            <p class="text-xs text-custom-primary-light leading-relaxed">她相信：<br/>幸福不是偶然，<br/>而是一种可以培养的能力。</p>
+            <button onclick="window.openFounderModal('maggie')" class="text-xs tracking-widest text-custom-accent hover:text-custom-primary underline underline-offset-4 cursor-pointer">打开她的人生小屋</button>
+          </div>
+
+          <!-- Michelle 卡片 -->
+          <div class="bg-white rounded-2xl border border-[#EBE4DC] p-8 text-center space-y-4 shadow-sm hover:border-[#C5A880] transition-colors duration-300">
+            <div class="w-24 h-24 rounded-full overflow-hidden border-2 border-white shadow-md mx-auto bg-accent-light">
+              <img src="images/img07.jpg" alt="Michelle Jiang" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200'"/>
+            </div>
+            <div>
+              <div class="font-serif text-xl font-bold text-custom-primary">Michelle</div>
+              <div class="text-xs text-custom-accent mt-1">路径系统陪伴者</div>
+            </div>
+            <p class="text-xs text-custom-primary-light leading-relaxed">她相信：<br/>方向，<br/>比努力更重要。</p>
+            <button onclick="window.openFounderModal('michelle')" class="text-xs tracking-widest text-custom-accent hover:text-custom-primary underline underline-offset-4 cursor-pointer">打开她的人生小屋</button>
+          </div>
+
+          <!-- Moe 卡片(占位) -->
+          <div class="bg-white rounded-2xl border border-[#EBE4DC] p-8 text-center space-y-4 shadow-sm hover:border-[#C5A880] transition-colors duration-300" onclick="window.openFounderModal('moe')" style="cursor:pointer;">
+            <div class="w-24 h-24 rounded-full overflow-hidden border-2 border-white shadow-md mx-auto bg-accent-light">
+              <img src="images/img08.jpg" alt="Moe Zhang" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200'"/>
+            </div>
+            <div>
+              <div class="font-serif text-xl font-bold text-custom-primary">Moe</div>
+              <div class="text-xs text-custom-accent mt-1">安全系统陪伴者</div>
+            </div>
+            <p class="text-xs text-custom-primary-light leading-relaxed">她相信：<br/>真正的安全感，<br/>来自始终拥有选择。</p>
+            <button onclick="window.openFounderModal('moe')" class="text-xs tracking-widest text-custom-accent hover:text-custom-primary underline underline-offset-4 cursor-pointer">打开她的人生小屋</button>
+          </div>
+        </div>
+
+        
+      <p class="text-center text-sm sm:text-base text-custom-primary-light leading-loose mt-14 font-serif">
+          我们不是人生的标准答案。<br/>只是比你早一步开始整理自己的人生系统。<br/>愿我们一起，慢慢长出属于自己的幸福力量。
+        </p>
+      </section>
+
+      <!-- 5. 🏷️ 引流与年度计划卡片 -->
+      <section id="offer" class="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center space-y-4 mb-16">
+          <span class="eyebrow-line text-xs tracking-[0.25em] text-[#C5A880] uppercase font-semibold">Join the Club</span>
+          <h2 class="text-3xl sm:text-4xl font-serif text-custom-primary">人生不会突然变好。<br/>但你可以，从重新认识自己开始。</h2>
+          <p class="text-sm text-custom-primary-light max-w-xl mx-auto leading-relaxed">
+            或许你不需要更努力。<br class="hidden sm:inline"/>你只是需要，第一次认真整理自己的人生系统。
+          </p>
+        </div>
+
+        <!-- 第一步:初体验 -->
+        <div class="max-w-2xl mx-auto mb-20">
+          <div class="text-center mb-8">
+            <span class="inline-block bg-[#F4EFEA] border border-[#EBE4DC] px-4 py-1.5 rounded-full text-xs tracking-[0.2em] text-custom-accent font-semibold">从一次轻盈的初体验开始</span>
+          </div>
+          <div class="bg-white rounded-2xl border border-[#EBE4DC] p-8 sm:p-10 shadow-lg">
+            <div class="space-y-6">
+              <h3 class="text-2xl font-serif text-custom-primary font-bold text-center">人生主理人计划 · 初体验</h3>
+              <p class="text-xs text-custom-primary-light leading-relaxed text-center max-w-md mx-auto">
+                一次 60 分钟的人生系统复盘
+              </p>
+              <div class="space-y-2.5 pt-4 border-t border-[#F4EFEA] text-xs sm:text-sm text-custom-primary-light max-w-sm mx-auto">
+                <div class="flex items-start space-x-2"><span class="text-custom-accent">✓</span><span>为什么越努力越疲惫？</span></div>
+                <div class="flex items-start space-x-2"><span class="text-custom-accent">✓</span><span>为什么优秀却没有幸福感？</span></div>
+                <div class="flex items-start space-x-2"><span class="text-custom-accent">✓</span><span>为什么拥有很多，却依然没有安全感？</span></div>
+              </div>
+              <p class="text-xs tracking-[0.2em] text-custom-accent text-center font-semibold pt-1">幸福系统｜路径系统｜安全系统</p>
+            </div>
+            <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div class="flex items-baseline space-x-1">
+                <span class="text-3xl font-serif font-bold text-custom-primary">¥29.9</span>
+                <span class="text-xs text-custom-primary-light">/ 一次人生复盘</span>
+              </div>
+              <button @click="contactModalOpen = true" class="w-full sm:w-auto px-10 py-3.5 rounded-full text-xs tracking-widest border border-custom-primary hover:bg-custom-primary hover:text-[#FDFBF7] transition-all duration-300 font-semibold uppercase cursor-pointer">开启第一次人生复盘</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center">
+          <a href="member.html" class="text-xs tracking-widest text-custom-accent hover:text-custom-primary underline underline-offset-4 cursor-pointer">体验模拟会员后台 →</a>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ==========================================
+        🔒 视图 2: 虚拟模拟会员专属后台 (极高互动体验)
+        ========================================== -->
+    <main x-show="viewMode === 'member'" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10 animate-fadeIn" style="display: none;">
+      
+      <!-- 后台顶栏 -->
+      <div class="bg-white rounded-2xl border border-[#EBE4DC] p-6 sm:p-8 mb-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div class="space-y-2">
+          <div class="flex items-center space-x-2 text-xs text-custom-accent tracking-widest font-semibold uppercase">
+            <svg width="14" height="14" class="text-custom-accent animate-spin-slow" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd"></path></svg>
+            <span>Her Life OS · 专属主理空间</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-serif text-custom-primary font-medium">主理人，欢迎回到你的自运行系统</h1>
+          <p class="text-xs text-custom-primary-light">每天用最轻松、无负担的节奏，打理并矫正你的人生运行系统。</p>
+        </div>
+        <button @click="viewMode = 'visitor'" class="px-4 py-2 text-xs tracking-widest text-custom-primary-light hover:text-custom-primary border border-[#EBE4DC] rounded-full hover:bg-[#FAF8F5] transition-all flex items-center space-x-1 cursor-pointer">
+          <span>← 返回公开官网</span>
+        </button>
+      </div>
+
+      <!-- 🌟 星愿瓶 -->
+      <div class="bg-gradient-to-br from-[#FAF8F5] via-[#F4EFEA] to-[#EDE6D8] rounded-3xl border border-[#EBE4DC] p-8 sm:p-12 mb-8 shadow-md">
+        <div class="flex flex-col lg:flex-row items-center gap-10">
+          
+          <!-- 瓶子插画 (放大) -->
+          <div class="relative flex-shrink-0">
+            <svg width="200" height="250" viewBox="0 0 200 250" fill="none">
+              <defs>
+                <linearGradient id="jarGlass" x1="0" y1="0" x2="0.25" y2="1">
+                  <stop offset="0" stop-color="#FCFEFD" stop-opacity="0.45"/>
+                  <stop offset="0.5" stop-color="#DBE7E4" stop-opacity="0.24"/>
+                  <stop offset="1" stop-color="#BCCDC9" stop-opacity="0.30"/>
+                </linearGradient>
+                <radialGradient id="jarSheen" cx="0.34" cy="0.36" r="0.5">
+                  <stop offset="0" stop-color="#ffffff" stop-opacity="0.85"/>
+                  <stop offset="0.6" stop-color="#ffffff" stop-opacity="0.12"/>
+                  <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+                </radialGradient>
+                <linearGradient id="jarRuffle" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#E4D2B6"/><stop offset="0.5" stop-color="#C2A57F"/><stop offset="1" stop-color="#A2855C"/>
+                </linearGradient>
+                <radialGradient id="jarBottom" cx="0.5" cy="0.9" r="0.62">
+                  <stop offset="0" stop-color="#9FB0AC" stop-opacity="0.30"/><stop offset="1" stop-color="#9FB0AC" stop-opacity="0"/>
+                </radialGradient>
+                <filter id="jarShadow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3"/></filter>
+              </defs>
+              <ellipse cx="102" cy="247" rx="70" ry="8" fill="#8C7C68" opacity="0.20" filter="url(#jarShadow)"/>
+              <path d="M30 72 Q40 57 51 70 Q62 82 73 69 Q84 56 95 69 Q106 82 117 69 Q128 56 139 69 Q150 82 161 70 Q166 64 170 72 C166 90 146 100 128 112 C158 118 184 142 184 176 C184 214 148 246 100 246 C52 246 16 214 16 176 C16 142 42 118 72 112 C54 100 34 90 30 72 Z" fill="url(#jarGlass)" stroke="#BAD0CB" stroke-width="2"/>
+              <ellipse cx="100" cy="220" rx="78" ry="36" fill="url(#jarBottom)"/>
+              <ellipse cx="100" cy="74" rx="54" ry="8.5" fill="rgba(255,255,255,0.10)" stroke="rgba(190,205,200,0.45)" stroke-width="1"/>
+              <ellipse cx="68" cy="175" rx="20" ry="56" fill="url(#jarSheen)" transform="rotate(-13 68 175)"/>
+              <ellipse cx="54" cy="138" rx="5" ry="15" fill="#ffffff" opacity="0.55" transform="rotate(-18 54 138)"/>
+              <path d="M30 72 Q40 57 51 70 Q62 82 73 69 Q84 56 95 69 Q106 82 117 69 Q128 56 139 69 Q150 82 161 70 Q166 64 170 72" fill="none" stroke="url(#jarRuffle)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M30 70.5 Q40 55.5 51 68.5 Q62 80.5 73 67.5 Q84 54.5 95 67.5 Q106 80.5 117 67.5 Q128 54.5 139 67.5 Q150 80.5 161 68.5 Q166 62.5 170 70.5" fill="none" stroke="#F3E9D6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+            </svg>
+            <!-- 星星容器 -->
+            <div id="star-jar-stars" class="absolute" style="left:16%;top:66%;width:68%;height:30%;overflow:hidden;border-radius:0 0 86px 86px;">
+              <template x-for="i in starJar.checkin" :key="'c'+i"><span class="absolute" :style="`color:#EFA6B8;text-shadow:0 -1px 0 rgba(255,255,255,0.5),0 1.5px 2px rgba(90,60,40,0.3);font-size:${18+(i*7)%12}px;left:${(i*23)%75+12}%;top:${(i*31)%55+38}%;`">★</span></template>
+              <template x-for="i in starJar.learn" :key="'l'+i"><span class="absolute" :style="`color:#F0C95E;text-shadow:0 -1px 0 rgba(255,255,255,0.5),0 1.5px 2px rgba(90,60,40,0.3);font-size:${18+(i*5)%12}px;left:${(i*37)%75+12}%;top:${(i*19)%55+38}%;`">★</span></template>
+              <template x-for="i in starJar.feel" :key="'f'+i"><span class="absolute" :style="`color:#9FCBA6;text-shadow:0 -1px 0 rgba(255,255,255,0.5),0 1.5px 2px rgba(90,60,40,0.3);font-size:${18+(i*11)%12}px;left:${(i*29)%75+12}%;top:${(i*41)%55+38}%;`">★</span></template>
+              <template x-for="i in starJar.insight" :key="'in'+i"><span class="absolute" :style="`color:#A6B6E6;text-shadow:0 -1px 0 rgba(255,255,255,0.5),0 1.5px 2px rgba(90,60,40,0.3);font-size:${18+(i*13)%12}px;left:${(i*43)%75+12}%;top:${(i*23)%55+38}%;`">★</span></template>
+            </div>
+          </div>
+
+          <!-- 文字 + 分类统计 -->
+          <div class="flex-1 text-center lg:text-left space-y-6 w-full">
+            <div>
+              <div class="flex items-center justify-center lg:justify-start gap-2 text-xs text-custom-accent tracking-widest font-semibold uppercase mb-2">
+                <span>✦ 我的星愿瓶</span>
+              </div>
+              <div class="font-serif text-3xl sm:text-4xl text-custom-primary font-medium">
+                你已经收集了 <span x-text="totalStars()" class="text-custom-accent"></span> 颗星
+              </div>
+              <p class="text-sm sm:text-base text-custom-primary-light mt-2 font-serif" x-text="encourageText()"></p>
+            </div>
+
+            <!-- 分类星星 -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              <div class="bg-white/80 rounded-2xl border border-[#EBE4DC] p-4 text-center">
+                <div class="text-2xl" style="color:#EFA6B8;">★</div>
+                <div class="text-xs text-custom-primary-light mt-2">打卡星</div>
+                <div class="font-serif text-2xl text-custom-primary mt-1" x-text="starJar.checkin"></div>
+              </div>
+              <div class="bg-white/80 rounded-2xl border border-[#EBE4DC] p-4 text-center">
+                <div class="text-2xl" style="color:#F0C95E;">★</div>
+                <div class="text-xs text-custom-primary-light mt-2">学习星</div>
+                <div class="font-serif text-2xl text-custom-primary mt-1" x-text="starJar.learn"></div>
+              </div>
+              <div class="bg-white/80 rounded-2xl border border-[#EBE4DC] p-4 text-center">
+                <div class="text-2xl" style="color:#9FCBA6;">★</div>
+                <div class="text-xs text-custom-primary-light mt-2">感触星</div>
+                <div class="font-serif text-2xl text-custom-primary mt-1" x-text="starJar.feel"></div>
+              </div>
+              <div class="bg-white/80 rounded-2xl border border-[#EBE4DC] p-4 text-center">
+                <div class="text-2xl" style="color:#A6B6E6;">★</div>
+                <div class="text-xs text-custom-primary-light mt-2">洞见星</div>
+                <div class="font-serif text-2xl text-custom-primary mt-1" x-text="starJar.insight"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 子系统导航 Tab -->
+      <div class="flex space-x-1 border-b border-[#EBE4DC] mb-8 overflow-x-auto member-tab-nav" style="-webkit-overflow-scrolling:touch;">
+        <button @click="memberTab = '自习室'" :class="memberTab === '自习室' ? 'text-custom-accent font-medium border-b-2 border-custom-accent' : 'text-custom-primary-light hover:text-custom-primary'" class="px-4 sm:px-5 py-3 text-xs sm:text-sm font-serif tracking-widest transition-all duration-300 whitespace-nowrap flex-shrink-0">📺 主理人自习室</button>
+        <button @click="memberTab = '每日实践'" :class="memberTab === '每日实践' ? 'text-custom-accent font-medium border-b-2 border-custom-accent' : 'text-custom-primary-light hover:text-custom-primary'" class="px-4 sm:px-5 py-3 text-xs sm:text-sm font-serif tracking-widest transition-all duration-300 whitespace-nowrap flex-shrink-0">🍃 每日主理实践</button>
+        <button @click="memberTab = '同行温暖圈'" :class="memberTab === '同行温暖圈' ? 'text-custom-accent font-medium border-b-2 border-custom-accent' : 'text-custom-primary-light hover:text-custom-primary'" class="px-4 sm:px-5 py-3 text-xs sm:text-sm font-serif tracking-widest transition-all duration-300 whitespace-nowrap flex-shrink-0">👥 1对3 创始陪伴舱</button>
+      </div>
+
+      <!-- 后台板块 1: 自习室 -->
+      <div x-show="memberTab === '自习室'" class="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fadeIn">
+        <div class="lg:col-span-8 space-y-6">
+          <div class="bg-white rounded-2xl border border-[#EBE4DC] p-6 shadow-sm space-y-6">
+            <div class="flex justify-between items-start border-b border-[#FAF8F5] pb-4">
+              <div class="space-y-1">
+                <span class="text-[10px] uppercase tracking-widest text-custom-accent font-semibold bg-[#FAF8F5] px-2 py-0.5 rounded border border-[#EBE4DC]">每周精选提点</span>
+                <h2 class="text-xl sm:text-2xl font-serif text-custom-primary font-medium">第4期：如何构建高效脱敏的情绪防护网</h2>
+                <p class="text-xs text-[#8A7A71]">主讲主理人：Maggie Lin · 时长：14 分钟</p>
+              </div>
+            </div>
+
+            <!-- 音频播放舱 -->
+            <div class="relative aspect-[16/9] bg-custom-primary rounded-xl overflow-hidden shadow-inner flex flex-col justify-between p-6">
+              <div class="absolute inset-0 bg-gradient-to-tr from-[#C5A880]/20 to-transparent pointer-events-none"></div>
+              <div class="flex justify-between items-center text-xs text-white/50 relative z-10">
+                <span class="tracking-widest uppercase">Audio Space</span>
+                <span class="bg-red-500/20 text-red-400 px-2 py-0.5 rounded text-[10px]" :class="isPlaying && 'animate-pulse'" x-text="isPlaying ? '正在播音陪伴' : '静音运行'"></span>
+              </div>
+
+              <!-- 播放按钮 -->
+              <div class="flex flex-col items-center justify-center space-y-3 relative z-10">
+                <button 
+                  @click="isPlaying = !isPlaying"
+                  class="w-16 h-16 rounded-full bg-gradient-to-r from-[#C5A880] to-[#B39369] text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl cursor-pointer"
+                >
+                  <svg width="24" height="24" x-show="!isPlaying" class="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6V4z"></path></svg>
+                  <svg width="24" height="24" x-show="isPlaying" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                </button>
+                <span class="text-xs text-[#FDFBF7]/80 font-serif" x-text="isPlaying ? '聆听中：Maggie正在为你拨开焦虑雾霾...' : '轻击开启今日精髓录音陪伴'"></span>
+              </div>
+
+              <!-- 播放条 -->
+              <div class="space-y-1 relative z-10">
+                <div class="flex justify-between text-[10px] text-white/50">
+                  <span x-text="'已播: ' + Math.floor((audioProgress * 14) / 100) + ' 分 / 14分'"></span>
+                  <span x-text="'进度: ' + audioProgress + '%'"></span>
+                </div>
+                <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden cursor-pointer" @click="audioProgress = Math.round(($event.offsetX / $el.clientWidth) * 100)">
+                  <div class="bg-custom-accent h-full" :style="'width: ' + audioProgress + '%'"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 随行笔记 -->
+            <div class="space-y-2 bg-[#FAF8F5] p-5 rounded-xl border border-[#EBE4DC]">
+              <h3 class="text-xs uppercase tracking-widest font-semibold text-custom-primary flex items-center space-x-1">
+                <svg width="14" height="14" class="text-custom-accent" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd"></path></svg>
+                <span>✦ 导师随笔</span>
+              </h3>
+              <p class="text-xs text-custom-primary-light leading-relaxed">
+                “高敏感、容易心累的女性不是脆弱，而是没有在感官上建立防火墙。我们在课中引入‘情绪隔板法’，允许自己感知世界，但不允许不相干的外界噪音轻易内耗掉你辛苦积攒的系统电力。”
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 随堂小练习卡片 -->
+        <div class="lg:col-span-4 space-y-6">
+          <div class="bg-white rounded-2xl border border-[#EBE4DC] p-6 shadow-sm space-y-6">
+            <div>
+              <span class="text-xs text-custom-accent font-mono">Practice Challenge</span>
+              <h3 class="text-lg font-serif font-semibold text-custom-primary">本周生命重塑微练习</h3>
+              <p class="text-xs text-[#8A7A71] leading-relaxed mt-1">写下这周最让你内耗焦虑的一件繁琐小事，并用情绪防护盾尝试解剖它：</p>
+            </div>
+
+            <div x-show="!assignmentSubmitted" class="space-y-4">
+              <textarea 
+                x-model="myAssignment"
+                placeholder="例如：今天被主管说我表格格式不标准，一下午都在反思是不是要开除我，极度消耗精神..."
+                class="w-full h-32 p-4 text-xs rounded-xl border border-[#EBE4DC] bg-[#FAF8F5] text-custom-primary focus:outline-none focus:ring-1 focus:ring-[#C5A880] resize-none placeholder:text-[#A6978C]"
+              ></textarea>
+              <button 
+                @click="if(myAssignment.trim() && !assignmentSubmitted){ assignmentSubmitted = true; addStar('learn'); }"
+                class="w-full py-3 rounded-full text-xs tracking-widest bg-custom-primary text-white hover:bg-custom-primary-dark transition-colors flex items-center justify-center space-x-2 font-medium cursor-pointer"
+              >
+                <span>投递至合伙人陪伴舱</span>
+              </button>
+            </div>
+
+            <div x-show="assignmentSubmitted" class="bg-gradient-to-br from-[#FAF8F5] to-bgBeige/40 p-6 rounded-xl border border-[#C5A880]/40 text-center space-y-4 animate-scaleUp">
+              <div class="w-12 h-12 rounded-full bg-[#C5A880]/10 flex items-center justify-center mx-auto text-[#C5A880]">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+              </div>
+              <div>
+                <h4 class="text-sm font-serif font-semibold text-custom-primary">打卡并投送成功！</h4>
+                <p class="text-[11px] text-[#8A7A71] mt-1">3位合伙人已同步在专属信箱收到你的更新。真棒，迈出了重建的第一步！</p>
+              </div>
+              <button @click="myAssignment = ''; assignmentSubmitted = false" class="text-[10px] text-custom-accent hover:underline cursor-pointer">重新编辑打卡</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 后台板块 2: 每日实践打卡 -->
+      <div x-show="memberTab === '每日实践'" class="max-w-3xl mx-auto animate-fadeIn" style="display: none;">
+        <div class="bg-white rounded-2xl border border-[#EBE4DC] p-6 sm:p-10 shadow-sm space-y-8">
+          
+          <div class="text-center space-y-2">
+            <span class="text-xs uppercase tracking-widest text-custom-accent">Morning Setup</span>
+            <h2 class="text-2xl font-serif text-custom-primary">每日3分钟 · 重启你的人生操作系统</h2>
+            <p class="text-xs text-[#8A7A71] font-light">在不产生压力和无度消耗的前提下，用最轻松的小动作进行生命矫正。</p>
+          </div>
+
+          <div x-show="!dailyLogSubmitted" class="space-y-6">
+            <!-- 1. 电力状态 -->
+            <div class="space-y-3">
+              <label class="text-xs font-semibold uppercase tracking-widest text-custom-primary">1. 选择今日你的能量格数🔋</label>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button @click="dailyEnergy = '🔋 满格充沛'" :class="dailyEnergy === '🔋 满格充沛' ? 'border-custom-accent bg-[#FAF8F5] ring-1 ring-custom-accent' : 'border-[#EBE4DC] bg-white'" class="p-4 rounded-xl border text-left transition-all cursor-pointer">
+                  <div class="text-sm font-medium text-custom-primary mb-1">🔋 满格充沛</div>
+                  <div class="text-[11px] text-custom-primary-light">情绪轻快，内在安稳充实</div>
+                </button>
+                <button @click="dailyEnergy = '⛅ 正常运转'" :class="dailyEnergy === '⛅ 正常运转' ? 'border-custom-accent bg-[#FAF8F5] ring-1 ring-custom-accent' : 'border-[#EBE4DC] bg-white'" class="p-4 rounded-xl border text-left transition-all cursor-pointer">
+                  <div class="text-sm font-medium text-custom-primary mb-1">⛅ 正常运行</div>
+                  <div class="text-[11px] text-[#8A7A71]">轻微波动，但底盘依然稳定</div>
+                </button>
+                <button @click="dailyEnergy = '🍃 极度超载'" :class="dailyEnergy === '🍃 极度超载' ? 'border-custom-accent bg-[#FAF8F5] ring-1 ring-custom-accent' : 'border-[#EBE4DC] bg-white'" class="p-4 rounded-xl border text-left transition-all cursor-pointer">
+                  <div class="text-sm font-medium text-[#2D221E] mb-1">🍃 处于超载</div>
+                  <div class="text-[11px] text-[#8A7A71]">精力耗干，内耗情绪隐约来袭</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- 2. 小意图 -->
+            <div class="space-y-3">
+              <label class="text-xs font-semibold uppercase tracking-widest text-custom-primary">2. 今日小主理目标（对哪件小事主张并说不）</label>
+              <input 
+                type="text" x-model="dailyIntention"
+                placeholder="例如：今晚推掉无用社交，九点准时洗澡躺空10分钟..."
+                class="w-full px-4 py-3 rounded-xl border border-[#EBE4DC] bg-[#FAF8F5] text-xs text-[#2D221E] focus:outline-none focus:ring-1 focus:ring-custom-accent"
+              />
+            </div>
+
+            <!-- 3. 习惯 -->
+            <div class="space-y-3">
+              <label class="text-xs font-semibold uppercase tracking-widest text-custom-primary">3. 随手理顺三个生命系统习惯</label>
+              <div class="space-y-2">
+                <label class="flex items-center space-x-3 bg-[#FAF8F5] p-3.5 rounded-xl border border-[#EBE4DC]/60 cursor-pointer hover:bg-[#F4EFEA]/30">
+                  <input type="checkbox" x-model="meditationChecked" class="accent-custom-accent rounded" />
+                  <span class="text-xs text-[#6B5A51]">完成5分钟深度冥想/腹式呼吸脱敏</span>
+                </label>
+                <label class="flex items-center space-x-3 bg-[#FAF8F5] p-3.5 rounded-xl border border-[#EBE4DC]/60 cursor-pointer hover:bg-[#F4EFEA]/30">
+                  <input type="checkbox" x-model="readingChecked" class="accent-custom-accent rounded" />
+                  <span class="text-xs text-[#6B5A51]">阅读今日《主理人晨间周报》1页</span>
+                </label>
+                <label class="flex items-center space-x-3 bg-[#FAF8F5] p-3.5 rounded-xl border border-[#EBE4DC]/60 cursor-pointer hover:bg-[#F4EFEA]/30">
+                  <input type="checkbox" x-model="reflectionChecked" class="accent-custom-accent rounded" />
+                  <span class="text-xs text-[#6B5A51]">完成一次核心问题随行复盘</span>
+                </label>
+              </div>
+            </div>
+
+            <button 
+              @click="if(!dailyLogSubmitted){ addStar('checkin'); if(meditationChecked) addStar('learn'); if(reflectionChecked) addStar('feel'); } dailyLogSubmitted = true; if(meditationChecked && readingChecked) unlockedBadge = true"
+              class="w-full py-4 rounded-full text-xs tracking-widest font-semibold bg-custom-primary text-white hover:bg-black transition-all shadow-md cursor-pointer"
+            >
+              🚀 记录并重启今日生命OS system
+            </button>
+          </div>
+
+          <!-- 打卡提交成功状态 -->
+          <div x-show="dailyLogSubmitted" class="bg-[#FAF8F5] p-8 rounded-2xl border border-custom-accent-trans text-center space-y-6 animate-scaleUp">
+            <div class="w-16 h-16 rounded-full bg-[#C5A880]/15 flex items-center justify-center mx-auto text-custom-accent">
+              <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            
+            <div class="space-y-2">
+              <h3 class="text-xl font-serif font-bold text-custom-primary">今日系统刷新成功！</h3>
+              <p class="text-xs text-primary-light leading-relaxed max-w-sm mx-auto">
+                你在电力状态为 <strong class="text-custom-accent" x-text="dailyEnergy"></strong> 的状态下，成功锚定了你的今日说不目标：<br />
+                <span class="text-custom-accent font-semibold" x-text="dailyIntention ? '“' + dailyIntention + '”' : '“让自己舒服地安抚生活”'"></span>
+              </p>
+            </div>
+
+            <div x-show="unlockedBadge" class="inline-flex items-center space-x-2 bg-gradient-to-r from-[#FAF6EE] to-[#C5A880]/30 border border-[#C5A880] px-4 py-2 rounded-lg text-xs text-custom-primary mx-auto">
+              <svg width="14" height="14" class="text-custom-accent animate-spin-slow" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd"></path></svg>
+              <span>恭喜你，解锁本周：<strong>【情绪稳定探索者】勋章</strong></span>
+            </div>
+
+            <div class="pt-4 border-t border-[#EBE4DC] flex justify-center space-x-4">
+              <button @click="dailyLogSubmitted = false; unlockedBadge = false" class="px-6 py-2 rounded-full text-xs border border-[#EBE4DC] text-[#8A7A71] hover:text-[#2D221E] cursor-pointer">重新打卡</button>
+              <button @click="memberTab = '同行温暖圈'" class="px-6 py-2 rounded-full text-xs bg-custom-accent text-white hover:opacity-95 cursor-pointer">看同舱伙伴</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 👥 TAB 3: 创始陪伴舱 (1对3 合伙人亲密交互模拟舱) -->
+      <div x-show="memberTab === '同行温暖圈'" class="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fadeIn" style="display: none;">
+        <div class="lg:col-span-8 space-y-6">
+          <div class="bg-white rounded-2xl border border-[#EBE4DC] p-6 shadow-sm space-y-6">
+            <div class="flex justify-between items-center border-b border-[#FAF8F5] pb-4">
+              <div class="space-y-1">
+                <span class="text-xs text-custom-accent font-mono">1-on-3 Support Cabin</span>
+                <h2 class="text-lg font-serif font-bold text-custom-primary">创始合伙人 1对3 陪伴舱</h2>
+              </div>
+              <span class="text-[10px] text-custom-accent bg-[#FAF5EE] border border-[#EBE4DC] px-2.5 py-1 rounded">128号专属静修小屋</span>
+            </div>
+
+            <p class="text-xs text-[#8A7A71] leading-relaxed">
+              这里是属于<strong>你与 3 位创始合伙人</strong>的私密树屋舱。当你完成打卡和系统日志后，Maggie、Michelle 和 Moe 会在陪伴舱内查看你的状态，送上一朵代表支持与默契的「陪伴花朵」🌸 收下她们的心意，也可以回应一句感谢。
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              <!-- Maggie -->
+              <div class="bg-[#FAF8F5] border border-[#EBE4DC]/60 p-5 rounded-xl flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <div class="w-10 h-10 rounded-full overflow-hidden bg-accent-light">
+                    <img src="images/img09.jpg" alt="Maggie" class="w-full h-full object-cover object-top" onerror="this.src='https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=100'" />
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold text-custom-primary">Maggie Lin (幸福)</div>
+                    <span class="text-[10px] text-custom-accent">「看到你今天的情绪记录，真为你高兴」</span>
+                  </div>
+                </div>
+                <button @click="receiveFlower('Maggie')" class="px-3 py-1.5 rounded-full text-[10px] border flex items-center space-x-1 cursor-pointer transition-all" :class="receivedFlowers.Maggie ? 'bg-[#FCEEF0] border-[#E8B5BC] text-[#C4748A]' : 'bg-white border-[#EBE4DC] hover:border-[#E8B5BC]'">
+                  <span x-text="receivedFlowers.Maggie ? '🌸 已收下 · 谢谢' : '🌸 收下花朵'"></span>
+                </button>
+              </div>
+
+              <!-- Michelle -->
+              <div class="bg-[#FAF8F5] border border-[#EBE4DC]/60 p-5 rounded-xl flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <div class="w-10 h-10 rounded-full overflow-hidden bg-accent-light">
+                    <img src="images/img10.jpg" alt="Michelle" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100'" />
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold text-custom-primary">Michelle Jiang (职涯)</div>
+                    <span class="text-[10px] text-custom-accent">「你的方向越来越清晰了，继续走」</span>
+                  </div>
+                </div>
+                <button @click="receiveFlower('Michelle')" class="px-3 py-1.5 rounded-full text-[10px] border flex items-center space-x-1 cursor-pointer transition-all" :class="receivedFlowers.Michelle ? 'bg-[#FCEEF0] border-[#E8B5BC] text-[#C4748A]' : 'bg-white border-[#EBE4DC] hover:border-[#E8B5BC]'">
+                  <span x-text="receivedFlowers.Michelle ? '🌸 已收下 · 谢谢' : '🌸 收下花朵'"></span>
+                </button>
+              </div>
+
+              <!-- Moe -->
+              <div class="bg-[#FAF8F5] border border-[#EBE4DC]/60 p-5 rounded-xl flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <div class="w-10 h-10 rounded-full overflow-hidden bg-accent-light">
+                    <img src="images/img11.jpg" alt="Moe" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=crop&w=100'" />
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold text-custom-primary">Moe Zhang (财务)</div>
+                    <span class="text-[10px] text-custom-accent">「你在认真规划未来，这份底气真好」</span>
+                  </div>
+                </div>
+                <button @click="receiveFlower('Moe')" class="px-3 py-1.5 rounded-full text-[10px] border flex items-center space-x-1 cursor-pointer transition-all" :class="receivedFlowers.Moe ? 'bg-[#FCEEF0] border-[#E8B5BC] text-[#C4748A]' : 'bg-white border-[#EBE4DC] hover:border-[#E8B5BC]'">
+                  <span x-text="receivedFlowers.Moe ? '🌸 已收下 · 谢谢' : '🌸 收下花朵'"></span>
+                </button>
+              </div>
+
+              <!-- 自己 (You) -->
+              <div class="bg-[#FAF8F5] border border-custom-accent-trans p-5 rounded-xl flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <div class="w-10 h-10 rounded-full bg-[#C5A880]/20 flex items-center justify-center font-bold text-xs text-custom-accent">你</div>
+                  <div>
+                    <div class="text-xs font-bold text-custom-primary">主理人 (你)</div>
+                    <span class="text-[10px] text-custom-accent font-medium">正在系统重塑中</span>
+                  </div>
+                </div>
+                <div class="px-3 py-1.5 rounded-full text-[10px] bg-white border border-[#EBE4DC] flex items-center space-x-1">
+                  <span>🌸 收花</span>
+                  <span class="font-mono text-xs font-bold text-custom-accent" x-text="groupFlowers.You"></span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 每日周报 -->
+        <div class="lg:col-span-4 space-y-6">
+          <div class="bg-white rounded-2xl border border-[#EBE4DC] p-6 shadow-sm space-y-4">
+            <span class="text-xs text-custom-accent uppercase tracking-widest font-mono">Weekly Digest</span>
+            <h3 class="text-lg font-serif font-semibold text-custom-primary">主理人周报精读</h3>
+            
+            <div class="space-y-3 pt-3">
+              <div class="p-3 bg-[#FAF8F5] rounded-xl border border-[#EBE4DC]/50 space-y-1 hover:border-custom-accent-trans cursor-pointer transition-colors">
+                <div class="text-[10px] text-custom-accent">第12期 · 深层重写</div>
+                <h4 class="text-xs font-bold text-custom-primary">为什么越来越多的女性开始重建自己的人生系统？</h4>
+                <p class="text-[11px] text-[#8A7A71] line-clamp-2">不是我们能力退化了，而是传统意义上追求完美的社会系统，已经无暇承载我们的灵魂...</p>
+              </div>
+              <div class="p-3 bg-[#FAF8F5] rounded-xl border border-[#EBE4DC]/50 space-y-1 hover:border-custom-accent-trans cursor-pointer transition-colors">
+                <div class="text-[10px] text-custom-accent">第11期 · 主理人叙事</div>
+                <h4 class="text-xs font-bold text-custom-primary">扔掉导师包袱，开启我的128天静修</h4>
+                <p class="text-[11px] text-primary-light line-clamp-2">曾经上完课依然空虚。直到我开始在4人小屋和同伴每天打理能量...</p>
+              </div>
+            </div>
+
+            <button @click="contactModalOpen = true" class="w-full py-2.5 rounded-full text-xs text-center border border-custom-accent text-custom-accent hover:bg-custom-accent hover:text-white transition-all cursor-pointer">阅读完整周报合页</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ==========================================
+        🌸 3. 20 题人生系统精细自测页 (融入为主站子模块，完美适应 WebKit 与 Safari)
+        ========================================== -->
+    <main x-show="viewMode === 'quiz'" class="max-w-4xl mx-auto px-4 py-8 sm:py-16 relative z-10 animate-fadeIn" style="display: none;">
+      
+      <!-- 答题部分 -->
+      <div x-show="!quizFinished" class="w-full max-w-2xl mx-auto">
+          <!-- 进度指示条 -->
+          <div class="mb-10">
+              <div class="flex justify-between text-sm tracking-widest uppercase mb-3 opacity-70 text-custom-primary-light font-bold">
+                  <span x-text="'Question ' + (quizIndex + 1) + ' / ' + questions.length"></span>
+                  <span x-text="Math.round(((quizIndex + 1) / questions.length) * 100) + '%'"></span>
+              </div>
+              <div class="w-full h-2 bg-[#C5A880]/10 rounded-full overflow-hidden">
+                  <div class="h-full bg-custom-accent progress-bar" :style="'width: ' + ((quizIndex + 1) / questions.length * 100) + '%'"></div>
+              </div>
+          </div>
+
+          <!-- 答题卡片容器 -->
+          <div class="relative min-h-[480px]">
+              <template x-for="(q, index) in questions" :key="index">
+                  <div x-show="quizIndex === index" 
+                       x-transition:enter="quiz-card opacity-0 translate-x-12"
+                       x-transition:enter-end="opacity-100 translate-x-0"
+                       x-transition:leave="quiz-card opacity-0 -translate-x-12 absolute"
+                       class="bg-white/95 backdrop-blur-md border border-custom-accent-trans p-6 sm:p-12 rounded-[32px] shadow-xl shadow-[#C5A880]/5">
+                      
+                      <div class="mb-10 space-y-4">
+                          <span class="inline-block px-4 py-1.5 bg-[#FAF5EE] text-custom-accent text-xs sm:text-sm tracking-widest rounded-full font-bold uppercase" x-text="q.category"></span>
+                          <!-- 提问大字：极致柔和清晰的深咖字，无任何斜体 -->
+                          <h2 class="text-2xl sm:text-3xl lg:text-4xl font-serif text-custom-primary leading-relaxed font-semibold animate-fadeIn" x-text="q.text"></h2>
+                          <!-- “同行者”悄悄话：移除了所有斜体，字迹不歪斜，边缘清晰锐利 -->
+                          <p class="text-[14px] sm:text-base lg:text-lg text-custom-primary-light leading-relaxed bg-[#FAF5EE]/40 px-5 py-4 rounded-[20px] border border-[#FAF5EE]/60 shadow-sm animate-fadeIn" x-text="'💡 ' + q.hint"></p>
+                      </div>
+
+                      <!-- 刻度分值选择区域 (1-5) -->
+                      <div class="grid grid-cols-5 gap-2 sm:gap-4 pt-4">
+                          <template x-for="score in [1,2,3,4,5]">
+                              <button @click="nextQuiz(score, q.type)" 
+                                      class="group flex flex-col items-center space-y-3.5 focus:outline-none cursor-pointer">
+                                  <!-- 动效按键：选中时采用浅沙金色柔和背景高亮，非选中状态也保持清晰深色字 -->
+                                  <div class="w-full aspect-square min-h-[52px] sm:min-h-[64px] rounded-[20px] border flex items-center justify-center text-lg sm:text-2xl font-serif transition-all duration-300 group-hover:scale-105 active:scale-95 shadow-sm"
+                                       :class="quizAnswers[quizIndex] && quizAnswers[quizIndex].score === score 
+                                               ? 'bg-custom-accent-light-trans text-custom-primary border-custom-accent font-bold ring-2 ring-custom-accent/40 shadow-inner' 
+                                               : 'border-custom-accent-trans text-custom-primary hover:bg-custom-accent-trans bg-white/60'"
+                                       x-text="score"></div>
+                                  <!-- 常亮辅助标识：高对比度中灰色标签 -->
+                                  <span class="text-[11px] sm:text-sm tracking-tighter text-custom-primary-light font-medium opacity-85 transition-all" 
+                                        :class="quizAnswers[quizIndex] && quizAnswers[quizIndex].score === score ? 'opacity-100 font-bold text-accent-dark' : ''"
+                                        x-text="score === 1 ? '极其不符' : (score === 5 ? '非常符合' : '')"></span>
+                              </button>
+                          </template>
+                      </div>
+
+                      <!-- “返回上一题” & “退出自测” -->
+                      <div class="flex justify-between items-center pt-8 border-t border-[#FAF5EE]/60 mt-10">
+                          <button 
+                            @click="viewMode = 'visitor'" 
+                            class="text-xs sm:text-sm text-custom-primary-light hover:text-custom-primary tracking-widest flex items-center transition-all focus:outline-none py-2 px-4 rounded-full hover:bg-[#FAF5EE]"
+                          >
+                              退出自测
+                          </button>
+                          <button 
+                            x-show="quizIndex > 0"
+                            @click="prevQuiz()" 
+                            class="text-sm sm:text-base text-custom-primary-light hover:text-custom-primary tracking-widest flex items-center transition-all focus:outline-none py-2 px-6 rounded-full hover:bg-[#FAF8F5] cursor-pointer"
+                          >
+                              <svg width="16" height="16" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
+                              返回上一题
+                          </button>
+                      </div>
+
+                  </div>
+              </template>
+          </div>
+      </div>
+
+      <!-- 报告生成完毕结果页 -->
+      <div x-show="quizFinished" class="w-full max-w-2xl mx-auto py-8 animate-scaleUp" style="display: none;">
+          <div class="bg-white border border-[#C5A880]/20 rounded-[40px] p-6 sm:p-14 shadow-2xl relative overflow-hidden text-center">
+              <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#C5A880]/20 via-custom-accent to-[#C5A880]/20"></div>
+              
+              <div class="mb-10">
+                  <div class="w-16 h-16 bg-[#FAF5EE] rounded-full flex items-center justify-center mx-auto mb-5 text-3xl shadow-sm" x-text="analysisResult.typeIcon"></div>
+                  <p class="eyebrow-line text-xs tracking-[0.25em] text-custom-accent uppercase font-semibold mb-3">Her Life OS · 人生系统觉察报告</p>
+                  <h2 class="text-3xl sm:text-4xl font-serif text-custom-primary font-semibold" x-text="analysisResult.typeName"></h2>
+                  <p class="text-sm sm:text-base text-custom-primary-light mt-4 leading-relaxed max-w-md mx-auto" x-text="analysisResult.summary"></p>
+              </div>
+
+              <!-- 维度分值可视化展示 -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
+                  <template x-for="key in ['inner', 'path', 'safety']" :key="key">
+                      <div class="bg-[#FAF8F5] p-5 sm:p-6 rounded-[24px] border border-[#FAF5EE]">
+                          <div class="text-xs sm:text-sm tracking-[0.25em] uppercase opacity-60 font-bold text-custom-primary-light" x-text="quizKeyMap[key]"></div>
+                          <div class="text-3xl sm:text-4xl font-serif text-custom-primary mt-2 font-bold" x-text="Math.round(quizScores[key] / (quizCountMap[key] * 5) * 100) + '%'"></div>
+                          <div class="w-full bg-[#C5A880]/10 h-1.5 rounded-full mt-4 overflow-hidden">
+                              <div class="h-full bg-custom-accent progress-bar" :style="'width: ' + (quizScores[key] / (quizCountMap[key]*5) * 100) + '%'"></div>
+                          </div>
+                      </div>
+                  </template>
+              </div>
+
+              <!-- 觉察解读与成长提示 -->
+              <div class="text-left space-y-6 bg-[#FAF5EE]/40 p-6 sm:p-10 rounded-[32px] border border-[#FAF5EE] mb-10 animate-fadeIn shadow-sm">
+                  <div class="space-y-2">
+                      <h4 class="font-serif text-custom-primary font-bold text-base sm:text-lg flex items-center">
+                          <span class="w-1.5 h-1.5 bg-custom-accent rounded-full mr-2.5"></span>
+                          此刻的你
+                      </h4>
+                      <p class="text-sm sm:text-base text-custom-primary-light leading-relaxed" x-text="analysisResult.body"></p>
+                  </div>
+
+                  <div class="pt-5 border-t border-[#EBE4DC] space-y-2">
+                      <h4 class="font-serif text-custom-primary font-bold text-base sm:text-lg flex items-center">
+                          <span class="w-1.5 h-1.5 bg-custom-accent rounded-full mr-2.5"></span>
+                          成长提示
+                        </h4>
+                        <p class="text-sm sm:text-base text-custom-primary leading-relaxed font-serif animate-fadeIn" x-text="analysisResult.invite"></p>
+                    </div>
+                </div>
+
+                <!-- 顺位转化 -->
+                <div class="space-y-4 max-w-md mx-auto">
+                    <button @click="viewMode = 'visitor'; setTimeout(() => { document.getElementById('offer')?.scrollIntoView({ behavior: 'smooth' }) }, 100)" 
+                            class="w-full py-4 bg-custom-primary text-white hover:bg-black rounded-full text-xs sm:text-sm tracking-[0.25em] font-semibold transition-all shadow-lg flex items-center justify-center space-x-2 cursor-pointer">
+                        <span>用 ¥29.9 初体验 · 开启我的主理之路</span>
+                    </button>
+                    <button @click="quizIndex = 0; quizFinished = false; quizAnswers = []; quizScores = { inner: 0, path: 0, safety: 0 };" 
+                            class="text-xs tracking-widest opacity-50 hover:opacity-100 uppercase text-custom-primary block mx-auto hover:underline font-bold pt-2 cursor-pointer">
+                        重新开启自测
+                    </button>
+                </div>
+          </div>
+      </div>
+      
+    </main>
+
+    <!-- ==========================================
+        👣 4. 底部极简信息栏
+        ========================================== -->
+    <footer class="bg-custom-primary text-[#FDFBF7] py-16 mt-24 relative z-10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-12 gap-12">
+        <div class="md:col-span-4 space-y-4">
+          <span class="font-serif text-lg tracking-[0.15em] text-white">启思摘星女性成长俱乐部</span>
+          <p class="text-xs text-custom-accent-light tracking-[0.2em]">Her Life OS｜人生主理人计划</p>
+          <p class="text-xs text-custom-accent-light-muted leading-relaxed pt-2">
+            重新设计属于自己的人生系统。<br/>愿每一位女性，都慢慢长出属于自己的幸福力量。
+          </p>
+        </div>
+
+        <div class="md:col-span-4 space-y-4">
+          <h4 class="text-xs uppercase tracking-widest text-custom-accent font-semibold">我们相信</h4>
+          <div class="grid grid-cols-1 gap-2 text-xs text-custom-accent-light-muted">
+            <span>幸福，可以培养。</span>
+            <span>成长，可以设计。</span>
+            <span>安全，可以建立。</span>
+          </div>
+        </div>
+
+        <div class="md:col-span-4 space-y-4">
+          <h4 class="text-xs uppercase tracking-widest text-custom-accent font-semibold">写在最后</h4>
+          <div class="text-xs text-custom-accent-light-muted space-y-2 font-serif">
+            <p>每个女人，<br/>都可以成为自己人生系统的主理人。</p>
+          </div>
+          <div class="pt-4">
+            <button @click="contactModalOpen = true" class="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-full text-xs tracking-widest text-white transition-colors cursor-pointer">今天，就是重新出发的第一天 →</button>
+          </div>
+        </div>
+      </div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 mt-12 border-t border-white/10 text-center text-[10px] text-custom-accent-light-muted tracking-widest">
+        &copy; 2026 启思摘星 Her Life OS Club. All Rights Reserved. 每个不曾起舞的日子，都是对生命的辜负。
+      </div>
+    </footer>
+
+    <!-- ==========================================
+        💬 5. 扫码联系我们 Modal 弹窗
+        ========================================== -->
+    <div x-show="contactModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+      <!-- 背景毛玻璃暗影 -->
+      <div class="absolute inset-0 bg-[#2D221E]/60 backdrop-blur-sm" @click="contactModalOpen = false"></div>
+      
+      <!-- 弹窗本体 -->
+      <div class="bg-white rounded-2xl max-w-sm w-full p-8 border border-[#EBE4DC] shadow-2xl relative z-10 text-center space-y-6 animate-scaleUp">
+        <button @click="contactModalOpen = false" class="absolute top-4 right-4 p-1 rounded-full hover:bg-[#FAF8F5] text-custom-primary-light hover:text-custom-primary">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+
+        <div class="space-y-2">
+          <div class="text-[10px] text-custom-accent uppercase tracking-[0.25em] font-bold">Connect with Us</div>
+          <h3 class="font-serif text-lg font-bold text-custom-primary">开启你的人生系统重构</h3>
+          <p class="text-xs text-custom-primary-light leading-relaxed">
+            请添加我们私人助理微信号或扫描二维码，申请进行1对1专属压力自测深度解剖 Coaching 体验：
+          </p>
+        </div>
+
+        <!-- 微信二维码：把真实二维码图放到 images/wechat-qr.png 即可自动显示；没有时显示占位卡片 -->
+        <div class="w-48 h-48 bg-gradient-to-br from-[#F5EFE6] to-[#FAF6EE] mx-auto rounded-xl p-4 border border-[#E5DCD3] shadow-inner flex flex-col items-center justify-center space-y-3 bg-grid-pattern">
+          <img src="images/wechat-qr.png" alt="Her Life OS 微信二维码"
+               class="w-32 h-32 rounded bg-white object-contain border border-[#E5DCD3]"
+               onerror="this.style.display='none'; document.getElementById('qr-placeholder').style.display='flex';"/>
+          <div id="qr-placeholder" class="w-32 h-32 border-2 border-custom-accent p-1.5 rounded bg-white relative" style="display:none;">
+            <div class="w-full h-full flex flex-col justify-between">
+              <div class="flex justify-between">
+                <div class="w-8 h-8 border-4 border-custom-primary bg-[#FAF8F5]"></div>
+                <div class="w-8 h-8 border-4 border-custom-primary bg-[#FAF8F5]"></div>
+              </div>
+              <div class="text-[9px] font-mono tracking-tighter text-center font-bold text-custom-accent">HER LIFE OS</div>
+              <div class="flex justify-between items-end">
+                <div class="w-8 h-8 border-4 border-custom-primary bg-[#FAF8F5]"></div>
+                <div class="w-6 h-6 border-2 border-custom-accent animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+          <div class="text-[9px] uppercase tracking-widest text-[#8A7A71] font-semibold">长按或扫码申请加入</div>
+        </div>
+
+        <div class="space-y-1">
+          <p class="text-xs font-semibold text-custom-primary">微信号: <span class="font-mono bg-[#F4EFEA] px-2 py-0.5 rounded text-sm text-custom-accent">HerLifeOS_Club</span></p>
+          <p class="text-[10px] text-custom-primary-light">备注：姓名 + 申请主理人Coaching</p>
+        </div>
+
+        <button @click="contactModalOpen = true" class="w-full py-3 rounded-full text-xs bg-custom-primary text-white hover:bg-black font-semibold tracking-widest transition-colors cursor-pointer">我知道了</button>
+      </div>
+    </div>
+
+  </div>
+
+
+
+
+<div class="f-modal-overlay" id="modal-moe" onclick="if(event.target===this)window.closeFounderModal('moe')">
+  <div class="f-modal-box">
+    <div class="f-modal-close"><button onclick="window.closeFounderModal('moe')">关闭 ✕</button></div>
+    <img src="images/story-moe.png" alt="Moe Zhang · 我的小屋故事" style="width:100%;display:block;border-radius:0 0 20px 20px;"/>
+  </div>
+</div>
+<script src="script.js"></script>
+
+<div class="f-modal-overlay" id="modal-maggie" onclick="if(event.target===this)window.closeFounderModal('maggie')">
+  <div class="f-modal-box">
+    <div class="f-modal-close"><button onclick="window.closeFounderModal('maggie')">关闭 ✕</button></div>
+    <img src="images/story-maggie.png" alt="Maggie Lin · 我的小屋故事" style="width:100%;display:block;border-radius:0 0 20px 20px;"/>
+  </div>
+</div>
+
+<div class="f-modal-overlay" id="modal-michelle" onclick="if(event.target===this)window.closeFounderModal('michelle')">
+  <div class="f-modal-box">
+    <div class="f-modal-close"><button onclick="window.closeFounderModal('michelle')">关闭 ✕</button></div>
+    <img src="images/img14.jpg" alt="Michelle Jiang · 我的小屋故事" style="width:100%;display:block;border-radius:0 0 20px 20px;"/>
+  </div>
+</div>
+
+
+</body>
+</html>
