@@ -282,6 +282,13 @@
         });
     },
     getFinalAnalysis() {
+        // ===== 可调阈值：整体偏低的判定线（5分量表下的题均分）=====
+        // 总体题均分 < LOW_SCORE_THRESHOLD 判定为「全面蓄力型」。
+        // 建议区间 2.75–3.25，先用 3.0 上线，积累真实答题数据后再校准。
+        const LOW_SCORE_THRESHOLD = 3.0;
+        // 均衡度阈值：三系统百分比差 <= BALANCE_SPREAD 视为均衡。
+        const BALANCE_SPREAD = 12;
+
         let pct = {
             inner: Math.round(this.quizScores.inner / (this.quizCountMap.inner * 5) * 100),
             path: Math.round(this.quizScores.path / (this.quizCountMap.path * 5) * 100),
@@ -289,41 +296,74 @@
         };
         let vals = [pct.inner, pct.path, pct.safety];
         let spread = Math.max(vals[0], vals[1], vals[2]) - Math.min(vals[0], vals[1], vals[2]);
+
+        // 总体题均分 = 三系统总得分 / 总题数（20）。正向计分，越同意分越高，已核对无反向题。
+        let totalScore = this.quizScores.inner + this.quizScores.path + this.quizScores.safety;
+        let totalItems = this.quizCountMap.inner + this.quizCountMap.path + this.quizCountMap.safety;
+        let avgScore = totalScore / totalItems;
+
+        // 最低系统判定：并列时先比系统内最低单题分，仍并列则固定优先级 内在 > 路径 > 安全。
         let lowest = 'inner';
         if (pct.path < pct[lowest]) lowest = 'path';
         if (pct.safety < pct[lowest]) lowest = 'safety';
+        // 并列处理：若有系统与当前 lowest 的百分比相同，用「系统内最低单题分」打破并列。
+        let minItemOf = (type) => {
+            let scores = this.quizAnswers.filter(a => a && a.type === type).map(a => a.score);
+            return scores.length ? Math.min(...scores) : 5;
+        };
+        ['inner', 'path', 'safety'].forEach(t => {
+            if (pct[t] === pct[lowest] && t !== lowest) {
+                if (minItemOf(t) < minItemOf(lowest)) lowest = t;
+                // 仍并列则维持固定优先级顺序（inner > path > safety，即不覆盖已选的更高优先项）
+            }
+        });
 
-        if (spread <= 12) {
+        // ===== 第一步：整体是否偏低 → 全面蓄力型 =====
+        if (avgScore < LOW_SCORE_THRESHOLD) {
+            return {
+                typeName: '全面蓄力型',
+                typeIcon: '✦',
+                summary: '你的人生系统，最近可能更多是在依靠意志力维持。内在、路径与安全三个系统，都到了值得被重新照顾、慢慢蓄力的时候。',
+                body: '能一路走到这里，说明你其实已经付出了很多。只是现阶段，三个系统给予你的支撑都还不够充分：你可能容易疲惫，对下一步有些模糊，面对未来时也缺少一点确定感。这并不意味着你不够好，而是过去的你，更多依靠自己扛住生活，还没有建立起一套能够持续托住自己的系统。好消息是，这些能力都不是固定的，而是可以从最需要的一处开始，一点点重新搭建起来。',
+                invite: '如果你愿意，可以从「第一次人生系统复盘」（60分钟初体验）开始。我们会陪你看清三个系统目前的状态，找到最值得优先照顾的那一块，让人生慢慢从“依靠意志力维持”，转向“有系统稳稳托住自己”。'
+            };
+        }
+
+        // ===== 第二步：均衡且整体不低 → 平衡生长型 =====
+        if (spread <= BALANCE_SPREAD) {
             return {
                 typeName: '平衡生长型',
                 typeIcon: '☀️',
-                summary: '你的人生系统已经具备较好的稳定性与韧性。',
-                body: '内在、路径、安全整体均衡。你能够兼顾内在感受、成长方向与现实安全感，在面对生活变化时拥有相对从容的应对能力。未来的重点不再是修补短板，而是让已有的优势持续生长，逐渐从“回应生活”走向“创造生活”。',
-                invite: '☀️ 人生正在邀请你，让已有的优势持续生长，从回应生活，慢慢走向创造生活。'
+                summary: '你的三大人生系统目前相对均衡，也已经具备继续生长的基础。',
+                body: '内在、路径、安全整体均衡。你能够兼顾内在感受、成长方向与现实安全感，在面对生活变化时拥有相对从容的应对能力。未来的重点不再是修补短板，而是让已有的优势持续生长，逐渐从“回应生活”走向“创造生活”，慢慢成为自己人生的主理人。',
+                invite: '☀️ 你已经站在一个很好的起点上。如果你愿意让这份优势继续生长，「第一次人生系统复盘」（60分钟初体验）会陪你把“创造生活”的方向，落成具体、可执行的下一步。'
             };
-        } else if (lowest === 'inner') {
+        }
+
+        // ===== 第三步：按最低系统判定 =====
+        if (lowest === 'inner') {
             return {
                 typeName: '责任承载型',
                 typeIcon: '✦',
                 summary: '你的人生系统整体运转稳定，但长期承担较多责任，内在能量需要被优先关注与补给。',
-                body: '你拥有很强的责任感与行动力，习惯照顾家庭、工作与身边的人，也总希望把事情做好。只是长时间把注意力放在外界以后，你可能已经很久没有认真照顾过自己的情绪与需求。未来最值得投入的，不是变得更努力，而是学会把自己也放回人生的重要位置。',
-                invite: '你的内在系统正在邀请你，把更多关注重新带回自己。'
+                body: '你拥有很强的责任感与行动力，习惯照顾家庭、工作与身边的人，也总希望把事情做好。只是长时间把注意力放在外界以后，你可能已经很久没有认真照顾过自己的情绪与需求。未来最值得投入的，不是变得更努力，而是先为自己建立一个“能够接住自己的内在系统”，把自己也放回人生的重要位置。',
+                invite: '你的内在系统正在邀请你，把更多关注重新带回自己。如果你愿意，一次60分钟的人生系统复盘（初体验），会陪你从“照顾好自己”这一步开始，慢慢长出属于自己的幸福力。'
             };
         } else if (lowest === 'path') {
             return {
                 typeName: '生长探索型',
                 typeIcon: '✦',
                 summary: '你的人生系统已经具备良好的基础，但未来方向与成长路径仍有进一步探索和拓展的空间。',
-                body: '你已经完成了很多人生角色的建设。但内心深处，也开始出现新的提问：我真正想要的是什么？未来的人生还能有哪些可能？这不是迷茫，而是成长开始发生的信号。未来最值得投入的，是重新连接自己的热情、兴趣与长期成长方向。',
-                invite: '你的路径系统正在邀请你，探索下一阶段的人生方向。'
+                body: '你已经完成了很多人生角色的建设。但内心深处，也开始出现新的提问：我真正想要的是什么？未来的人生还能有哪些可能？这不是迷茫，而是成长开始发生的信号。未来最值得投入的，是重新连接自己的优势、热爱与长期成长方向——因为方向，往往比努力更重要。',
+                invite: '你的路径系统正在邀请你，探索下一阶段的人生方向。如果你愿意，「第一次人生系统复盘」（60分钟初体验），会陪你把这些还模糊的“可能”，梳理成一条真正适合自己的成长路径。'
             };
         } else {
             return {
                 typeName: '安全筑基型',
                 typeIcon: '✦',
                 summary: '你的人生系统整体向好，但安全感更多依赖外部条件，安全系统值得被优先关注与建设。',
-                body: '你拥有不错的成长动力与生活热情。但在面对未来的不确定性时，仍然会希望拥有更多底气与选择权。安全感并不仅仅来自账户里的数字，它更来自于：对资源的管理能力、对风险的理解能力，以及对人生选择的自主权。未来最值得投入的，是为自己建立更稳定、更从容的安全底盘。',
-                invite: '你的安全系统正在邀请你，为未来建立更稳定的底气与选择权。'
+                body: '你拥有不错的成长动力与生活热情。但在面对未来的不确定性时，仍然会希望拥有更多底气与选择权。安全感并不仅仅来自账户里的数字，它更来自于：对资源的管理能力、对风险的理解能力，以及对人生选择的自主权。未来最值得投入的，是为自己建立更稳定、更从容的安全底盘，让安全感来自你始终拥有“选择自己人生的底气”。',
+                invite: '你的安全系统正在邀请你，为未来建立更稳定的底气与选择权。如果你愿意，可以从「第一次人生系统复盘」（60分钟初体验）开始。我们会陪你看清当前最影响安全感的那一环，把对未来的隐约焦虑，梳理成可以一步步掌控的行动方向。'
             };
         }
     },
@@ -763,14 +803,14 @@
                 <div class="flex items-start space-x-2"><span class="text-custom-accent">✓</span><span>为什么优秀却没有幸福感？</span></div>
                 <div class="flex items-start space-x-2"><span class="text-custom-accent">✓</span><span>为什么拥有很多，却依然没有安全感？</span></div>
               </div>
-              <p class="text-xs tracking-[0.2em] text-custom-accent text-center font-semibold pt-1">幸福系统｜路径系统｜安全系统</p>
+              <p class="text-xs tracking-[0.2em] text-custom-accent text-center font-semibold pt-1">内在系统｜路径系统｜安全系统</p>
             </div>
             <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div class="flex items-baseline space-x-1">
                 <span class="text-3xl font-serif font-bold text-custom-primary">¥29.9</span>
                 <span class="text-xs text-custom-primary-light">/ 一次人生复盘</span>
               </div>
-              <button @click="contactModalOpen = true" class="w-full sm:w-auto px-10 py-3.5 rounded-full text-xs tracking-widest border border-custom-primary hover:bg-custom-primary hover:text-[#FDFBF7] transition-all duration-300 font-semibold uppercase cursor-pointer">开启第一次人生复盘</button>
+              <button @click="contactModalOpen = true" class="w-full sm:w-auto px-10 py-3.5 rounded-full text-xs tracking-widest border border-custom-primary hover:bg-custom-primary hover:text-[#FDFBF7] transition-all duration-300 font-semibold uppercase cursor-pointer">开启第一次人生系统复盘</button>
             </div>
           </div>
         </div>
@@ -1313,15 +1353,22 @@
                     </div>
                 </div>
 
-                <!-- 顺位转化 -->
-                <div class="space-y-4 max-w-md mx-auto">
-                    <button @click="viewMode = 'visitor'; setTimeout(() => { document.getElementById('offer')?.scrollIntoView({ behavior: 'smooth' }) }, 100)" 
+                <!-- 顺位转化：三出口（加会员 / 初体验 / 返回主页） -->
+                <div class="space-y-3 max-w-md mx-auto">
+                    <!-- 主按钮：加入会员，弹出微信弹窗加 Moe -->
+                    <button @click="contactModalOpen = true"
                             class="w-full py-4 bg-custom-primary text-white hover:bg-black rounded-full text-xs sm:text-sm tracking-[0.25em] font-semibold transition-all shadow-lg flex items-center justify-center space-x-2 cursor-pointer">
-                        <span>用 ¥29.9 初体验 · 开启我的主理之路</span>
+                        <span>加入会员 · 开启一对一陪伴</span>
                     </button>
-                    <button @click="quizIndex = 0; quizFinished = false; quizAnswers = []; quizScores = { inner: 0, path: 0, safety: 0 };" 
+                    <!-- 次按钮：¥29.9 初体验，跳回访客页滚到 offer 区 -->
+                    <button @click="viewMode = 'visitor'; setTimeout(() => { document.getElementById('offer')?.scrollIntoView({ behavior: 'smooth' }) }, 100)"
+                            class="w-full py-3.5 rounded-full text-xs sm:text-sm tracking-[0.2em] font-semibold border border-custom-primary text-custom-primary hover:bg-custom-primary hover:text-white transition-all cursor-pointer">
+                        用 ¥29.9 先体验一次
+                    </button>
+                    <!-- 文字链接：返回主页 -->
+                    <button @click="viewMode = 'visitor'; setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, 100)"
                             class="text-xs tracking-widest opacity-50 hover:opacity-100 uppercase text-custom-primary block mx-auto hover:underline font-bold pt-2 cursor-pointer">
-                        重新开启自测
+                        返回主页看看
                     </button>
                 </div>
           </div>
