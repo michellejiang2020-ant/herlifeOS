@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>主理人回信台 · 启思摘星</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+:root{--bg:#F3F7FA;--ink:#253544;--ink2:#3C4E5F;--ink3:#5E7284;--hint:#8FA9BD;--accent:#5B7E9F;--line:#C9D9E5;--card:#fff;--btn:#2B3A4A;--warn:#B0785E;--ok:#6F9A82;
+  --c-Michelle:#C98F6E;--c-Maggie:#C99393;--c-Moe:#86A086}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink2);font-family:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+.wrap{max-width:760px;margin:0 auto;padding:24px 16px 60px}
+h1{font-family:'Noto Serif SC',serif;font-weight:500;font-size:22px;color:var(--ink);margin:0}
+.sub{font-size:12px;color:var(--hint);margin-top:6px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:16px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{background:var(--btn);color:#F3F7FA;border-radius:999px;padding:9px 20px;font-size:13px;letter-spacing:.08em}
+.btn[disabled]{opacity:.45;cursor:default}
+.ghost{border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:12px;background:#fff}
+.ghost.on{background:var(--btn);color:#fff;border-color:var(--btn)}
+input,select,textarea{border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:#fff;outline:none;font-size:14px}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{width:100%;resize:vertical;min-height:110px;line-height:1.8}
+.err{color:var(--warn);font-size:12px;margin-top:8px}
+.ok{color:var(--ok);font-size:12px;margin-top:8px}
+.member{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 4px;border-bottom:1px solid var(--line)}
+.member:last-child{border-bottom:0}
+.mname{font-size:14px;color:var(--ink)}
+.mmeta{font-size:11px;color:var(--hint);margin-top:2px}
+.badge{margin-left:auto;flex:none;font-size:11px;color:#fff;background:var(--warn);border-radius:999px;padding:2px 9px}
+.badge.done{background:none;color:var(--hint)}
+.letter{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:0 60px 8px 0;background:#fff}
+.letter.f{margin:0 0 8px 60px;background:#F7FAFC}
+.letter .meta{font-size:11px;color:var(--hint)}
+.letter .txt{font-size:13.5px;line-height:1.9;margin-top:4px;white-space:pre-wrap;word-break:break-word}
+.mood{font-size:12.5px;color:var(--ink3);line-height:1.8}
+.code{font-family:ui-monospace,Menlo,monospace;font-size:18px;letter-spacing:.08em;color:var(--ink);background:#F3F7FA;border-radius:8px;padding:6px 12px}
+.who{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.back{font-size:12px;color:var(--accent)}
+@media (max-width:520px){.letter{margin-right:24px}.letter.f{margin-left:24px}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+var CONFIG = {
+  // 和 planet.html 里填同一个云函数地址
+  API_BASE: 'https://herlifeosclub-d5gg2a6psa033713e-1409877564.ap-shanghai.app.tcloudbase.com/hlos'
+};
+var API = window.HLOS_API || CONFIG.API_BASE;
+var FOUNDERS = ['Michelle', 'Maggie', 'Moe'];
+
+var S = { pw: '', me: '', members: [], open: '', filter: 'todo', err: '', okMsg: '', busy: false, newCode: '', resetLink: '', draft: {} };
+try { S.pw = sessionStorage.getItem('hlos_f_pw') || ''; S.me = localStorage.getItem('hlos_f_me') || ''; } catch (e) {}
+
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function when(t) { var d = new Date(t); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+function call(action, p) {
+  if (!API) return Promise.reject(new Error('还没有填写云函数地址（CONFIG.API_BASE）'));
+  return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action: action, pw: S.pw }, p || {})) })
+    .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(j.error || '请求失败'); return j; }); },
+      function () { throw new Error('网络有点不稳定，请稍后再试'); });
+}
+// 会员页网址：和回信台放在同一个目录
+var PLANET_URL = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '') + 'planet.html';
+function regLink(code) { return PLANET_URL + '?code=' + code; }
+function linkBox(url) {
+  return '<div style="margin-top:12px" class="row"><input readonly value="' + esc(url) + '" style="flex:1;min-width:200px;font-size:12px;color:var(--ink3)" onfocus="this.select()">' +
+    '<button class="ghost" data-a="copy" data-t="' + esc(url) + '">复制</button></div>';
+}
+
+function unreplied(m) { return m.letters.filter(function (l) { return l.from === 'member' && !l.replied; }).length; }
+function lastAt(m) { return m.letters.length ? m.letters[m.letters.length - 1].createdAt : 0; }
+
+function render() {
+  var h = '';
+  if (!S.pw) {
+    h = '<h1>主理人回信台</h1><div class="sub">只给 Michelle、Maggie、Moe 使用</div>' +
+      '<div class="box"><div class="row"><input id="pw" type="password" placeholder="输入回信台密码" autocomplete="current-password"><button class="btn" data-a="login">进入</button></div>' +
+      (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '') + '</div>';
+    return document.getElementById('app').innerHTML = h;
+  }
+  if (!S.me) {
+    h = '<h1>你是哪一位？</h1><div class="sub">回信时默认用你的名字署名，之后也可以切换</div><div class="box row">' +
+      FOUNDERS.map(function (f) { return '<button class="ghost" data-a="me" data-f="' + f + '"><span class="who" style="background:var(--c-' + f + ')"></span>' + f + '</button>'; }).join('') + '</div>';
+    return document.getElementById('app').innerHTML = h;
+  }
+  var m = S.members.filter(function (x) { return x.code === S.open; })[0];
+  if (m) return renderMember(m);
+
+  var todo = S.members.filter(function (x) { return unreplied(x) > 0; }).length;
+  var list = S.members.slice();
+  if (S.filter === 'todo') list = list.filter(function (x) { return unreplied(x) > 0; });
+  list.sort(function (a, b) { return unreplied(b) - unreplied(a) || lastAt(b) - lastAt(a); });
+
+  h += '<div class="row" style="justify-content:space-between"><div><h1>主理人回信台</h1><div class="sub">' + esc(S.me) + '，你好 · 待回信 ' + todo + ' 位</div></div>' +
+    '<div class="row"><button class="ghost" data-a="refresh">刷新</button><button class="ghost" data-a="switch">切换身份</button><button class="ghost" data-a="logout">退出</button></div></div>';
+  h += '<div class="box"><div class="row"><button class="ghost' + (S.filter === 'todo' ? ' on' : '') + '" data-a="filter" data-v="todo">待回信</button>' +
+    '<button class="ghost' + (S.filter === 'all' ? ' on' : '') + '" data-a="filter" data-v="all">全部会员（' + S.members.length + '）</button></div>';
+  if (!list.length) h += '<div class="sub" style="padding:16px 4px">' + (S.filter === 'todo' ? '现在没有待回的信。' : '还没有会员。') + '</div>';
+  list.forEach(function (x) {
+    var n = unreplied(x), st = x.status;
+    h += '<button class="member" data-a="open" data-c="' + esc(x.code) + '"><div><div class="mname">' + esc(x.note || '（未备注）') + (x.planetName ? ' · 「' + esc(x.planetName) + '」' : '') + '</div>' +
+      '<div class="mmeta">' + (x.email ? esc(x.email) : esc(x.code) + ' · 未注册') + ' · ' + (x.kind === 'trial' ? '内测' : '会员') + ' · ' +
+      (st ? (st.active ? '第 ' + st.day + ' 天，至 ' + st.expiresAt : '已于 ' + st.expiresAt + ' 到期') : '尚未进入星球') + '</div></div>' +
+      (n ? '<span class="badge">' + n + ' 封待回</span>' : '<span class="badge done">' + (x.letters.length ? '已回复' : '') + '</span>') + '</button>';
+  });
+  h += '</div>';
+
+  h += '<div class="box"><div class="mname" style="margin-bottom:10px">生成新的注册链接</div><div class="row">' +
+    '<input id="note" placeholder="备注（例如：小美 / 第一批内测）" style="flex:1;min-width:180px">' +
+    '<select id="kind"><option value="trial">内测 · 1 个月</option><option value="member">正式会员 · 12 个月</option></select>' +
+    '<button class="btn" data-a="create"' + (S.busy ? ' disabled' : '') + '>生成</button></div>' +
+    (S.newCode ? linkBox(regLink(S.newCode)) +
+      '<div class="sub">把这条链接发给对方（只能注册一次）。她打开后设置邮箱和密码，会员期从注册那天开始计算。</div>' : '') + '</div>';
+  if (S.err) h += '<div class="err">' + esc(S.err) + '</div>';
+  document.getElementById('app').innerHTML = h;
+}
+
+function renderMember(m) {
+  var st = m.status, d = S.draft[m.code] || '';
+  var h = '<button class="back" data-a="close">← 返回列表</button>' +
+    '<h1 style="margin-top:12px">' + esc(m.note || '（未备注）') + (m.planetName ? ' · 「' + esc(m.planetName) + '」' : '') + '</h1>' +
+    '<div class="sub">' + (m.email ? esc(m.email) + ' · ' : '') + esc(m.code) + ' · ' + (st ? (st.active ? '第 ' + st.day + ' 天 · 会员期至 ' + st.expiresAt : '已于 ' + st.expiresAt + ' 到期（只读）') : '尚未进入星球') + '</div>';
+  // 账号：没注册 → 再发一次注册链接；已注册 → 可以生成重设密码链接
+  h += '<div class="box">';
+  if (!m.email) {
+    h += '<div class="sub" style="margin:0 0 8px">她还没有注册。可以把注册链接再发给她一次：</div>' + linkBox(regLink(m.code));
+  } else {
+    h += '<div class="row"><span class="sub" style="margin:0">她忘记密码、又收不到验证码邮件时：</span><button class="ghost" data-a="resetlink"' + (S.busy ? ' disabled' : '') + '>生成重设密码链接</button></div>';
+    if (S.resetLink) h += linkBox(S.resetLink) + '<div class="sub">把这条链接发给她，7 天内有效，用一次就失效。</div>';
+  }
+  h += '</div>';
+  if (m.moods.length) {
+    h += '<div class="box"><div class="sub" style="margin:0 0 8px">最近的今日星情（供回信时参考）</div>' +
+      m.moods.map(function (x) { return '<div class="mood">第 ' + x.day + ' 天 ·「' + esc(x.card) + '」' + esc(x.text) + '</div>'; }).join('') + '</div>';
+  }
+  h += '<div class="box">';
+  if (!m.letters.length) h += '<div class="sub">还没有来信。</div>';
+  m.letters.forEach(function (l) {
+    var me = l.from === 'member';
+    h += '<div class="letter' + (me ? '' : ' f') + '"><div class="meta">' + (me ? '会员来信' : '<span class="who" style="background:var(--c-' + esc(l.from) + ')"></span>' + esc(l.from) + ' 回信') +
+      ' · 第 ' + l.day + ' 天 · ' + when(l.createdAt) + '</div><div class="txt">' + esc(l.text) + '</div></div>';
+  });
+  if (st && st.active) {
+    h += '<div style="margin-top:14px"><textarea id="reply" placeholder="写回信……">' + esc(d) + '</textarea></div>' +
+      '<div class="row" style="margin-top:10px"><span class="sub" style="margin:0">署名</span><select id="as">' +
+      FOUNDERS.map(function (f) { return '<option' + (f === S.me ? ' selected' : '') + '>' + f + '</option>'; }).join('') + '</select>' +
+      '<button class="btn" data-a="reply"' + (S.busy ? ' disabled' : '') + '>寄出回信</button></div>';
+  } else if (st) h += '<div class="sub">会员期已结束，信箱已关闭。</div>';
+  h += (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '') + (S.okMsg ? '<div class="ok">' + esc(S.okMsg) + '</div>' : '') + '</div>';
+  document.getElementById('app').innerHTML = h;
+}
+
+function load() {
+  S.busy = true;
+  return call('f_list').then(function (r) { S.members = r.members; S.busy = false; S.err = ''; render(); },
+    function (e) { S.busy = false; if (/密码/.test(e.message)) { S.pw = ''; try { sessionStorage.removeItem('hlos_f_pw'); } catch (x) {} } S.err = e.message; render(); });
+}
+
+document.addEventListener('input', function (e) { if (e.target.id === 'reply' && S.open) S.draft[S.open] = e.target.value; });
+document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id === 'pw') act('login'); });
+document.addEventListener('click', function (e) { var b = e.target.closest('[data-a]'); if (b && !b.disabled) act(b.getAttribute('data-a'), b); });
+
+function act(a, b) {
+  S.okMsg = '';
+  if (a === 'login') {
+    S.pw = document.getElementById('pw').value;
+    return call('f_login').then(function () { try { sessionStorage.setItem('hlos_f_pw', S.pw); } catch (x) {} S.err = ''; render(); if (S.me) load(); },
+      function (e) { S.pw = ''; S.err = e.message; render(); });
+  }
+  if (a === 'me') { S.me = b.getAttribute('data-f'); try { localStorage.setItem('hlos_f_me', S.me); } catch (x) {} render(); return load(); }
+  if (a === 'switch') { S.me = ''; try { localStorage.removeItem('hlos_f_me'); } catch (x) {} return render(); }
+  if (a === 'logout') { S.pw = ''; S.members = []; try { sessionStorage.removeItem('hlos_f_pw'); } catch (x) {} return render(); }
+  if (a === 'refresh') return load();
+  if (a === 'filter') { S.filter = b.getAttribute('data-v'); return render(); }
+  if (a === 'open') { S.open = b.getAttribute('data-c'); S.err = ''; S.resetLink = ''; render(); return window.scrollTo(0, 0); }
+  if (a === 'close') { S.open = ''; S.err = ''; S.resetLink = ''; return render(); }
+  if (a === 'resetlink') {
+    S.busy = true; render();
+    return call('f_resetLink', { code: S.open }).then(function (r) {
+      S.busy = false; S.err = ''; S.resetLink = PLANET_URL + '?reset=' + r.key; render();
+    }, function (e) { S.busy = false; S.err = e.message; render(); });
+  }
+  if (a === 'reply') {
+    var text = (S.draft[S.open] || '').trim();
+    if (!text) { S.err = '回信还是空的'; return render(); }
+    var as = document.getElementById('as').value;
+    S.busy = true; render();
+    return call('f_reply', { code: S.open, founder: as, text: text }).then(function (r) {
+      S.members = r.members; S.draft[S.open] = ''; S.busy = false; S.err = ''; S.okMsg = '回信已寄出，会员下次打开星球就能看到，星球上会飞来一只蝴蝶。'; render();
+    }, function (e) { S.busy = false; S.err = e.message; render(); });
+  }
+  if (a === 'create') {
+    var kind = document.getElementById('kind').value, note = document.getElementById('note').value;
+    S.busy = true; render();
+    return call('f_createCode', { kind: kind, note: note }).then(function (r) {
+      S.newCode = r.code; S.busy = false; S.err = ''; return load();
+    }, function (e) { S.busy = false; S.err = e.message; render(); });
+  }
+  if (a === 'copy') {
+    var t = b.getAttribute('data-t');
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { b.textContent = '已复制 ✓'; }, function () { prompt('请手动复制：', t); });
+  }
+}
+
+render();
+if (S.pw && S.me) load();
+</script>
+</body>
+</html>

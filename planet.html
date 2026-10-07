@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>我的星球 · 启思摘星</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+:root{
+  --bg1:#FAFCFE;--bg2:#F3F7FA;--bg3:#E9F1F7;
+  --ink:#253544;--ink2:#3C4E5F;--ink3:#5E7284;--hint:#8FA9BD;--accent:#5B7E9F;--accent2:#7A94AB;
+  --line:#C9D9E5;--line2:#A8C3D9;--card:rgba(255,255,255,.72);--cardSolid:#FFFFFF;
+  --btn:#2B3A4A;--btnHover:#1E2A37;--btnInk:#F3F7FA;--warn:#B0785E;
+  --c-Michelle:#C98F6E;--c-Maggie:#C99393;--c-Moe:#86A086;--c-talk:#8E9DB8;
+}
+body.night{
+  --bg1:#0D1522;--bg2:#142136;--bg3:#1A2B45;
+  --ink:#E8F0F7;--ink2:#C7D6E4;--ink3:#9FB4C8;--hint:#8FA9BD;--accent:#A8C3D9;--accent2:#8FA9BD;
+  --line:rgba(168,195,217,.25);--line2:rgba(168,195,217,.45);--card:rgba(232,240,247,.06);--cardSolid:rgba(232,240,247,.1);
+  --btn:#DCE9F3;--btnHover:#FFFFFF;--btnInk:#16233A;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:linear-gradient(180deg,var(--bg1),var(--bg2) 45%,var(--bg3));background-attachment:fixed;color:var(--ink2);
+  font-family:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;-webkit-font-smoothing:antialiased;transition:background .4s}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+a{color:var(--accent)}
+.serif{font-family:'Noto Serif SC','Songti SC',serif}
+.brush{font-family:'Ma Shan Zheng','Noto Serif SC',serif}
+.wrap{position:relative;max-width:430px;margin:0 auto;min-height:100vh;padding:24px 0 56px;display:flex;flex-direction:column;align-items:center;overflow:hidden}
+.fade{animation:fadeup .6s ease both}
+.top{align-self:stretch;display:flex;align-items:center;justify-content:space-between;padding:0 18px;gap:8px;position:relative;z-index:2}
+.home{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:7px 13px;background:var(--card);min-height:32px}
+.label{font-family:'Noto Serif SC',serif;font-size:10px;letter-spacing:.45em;color:var(--accent2)}
+.toggle{display:flex;gap:2px;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--card);min-height:32px}
+.toggle span{font-size:10.5px;color:var(--hint);padding:5px 11px;border-radius:999px}
+.toggle span.on{background:var(--btn);color:var(--btnInk)}
+.btn{display:inline-block;background:var(--btn);color:var(--btnInk);font-size:14px;letter-spacing:.2em;padding:14px 42px;border-radius:999px;min-height:44px;transition:background .2s}
+.btn:hover{background:var(--btnHover)}
+.btn.sm{font-size:12px;letter-spacing:.12em;padding:10px 22px;min-height:38px}
+.btn[disabled]{opacity:.45;cursor:default}
+.link{font-size:11.5px;color:var(--accent);border-bottom:1px dashed var(--line2);padding-bottom:1px}
+.input{width:240px;border:1px solid var(--line2);border-radius:999px;background:var(--card);outline:none;text-align:center;font-size:16px;color:var(--ink);padding:12px 16px}
+.input:focus,.ta:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,126,159,.15)}
+.ta{width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card);outline:none;resize:none;padding:10px 12px;font:inherit;font-size:13px;color:var(--ink);line-height:1.8}
+.hint{font-size:11px;color:var(--hint);font-weight:300;line-height:1.8}
+.err{font-size:11.5px;color:var(--warn);margin-top:10px;font-weight:300}
+.banner{align-self:stretch;margin:0 18px 6px;font-size:11px;line-height:1.7;color:var(--warn);background:rgba(176,120,94,.08);border:1px solid rgba(176,120,94,.25);border-radius:10px;padding:8px 12px;text-align:center}
+
+/* 星球 */
+.stage{position:relative;width:320px;height:320px;margin-top:14px}
+.ball{position:absolute;inset:50px;border-radius:50%;
+  background:url(images/planet/planet-day.png) center/cover no-repeat;
+  box-shadow:0 26px 46px -20px rgba(91,126,159,.55);
+  animation:breathe 8s ease-in-out infinite}
+.ball.plain{box-shadow:0 18px 34px -22px rgba(91,126,159,.4)}
+.shadow{position:absolute;left:50%;bottom:34px;width:200px;height:28px;transform:translateX(-50%);border-radius:50%;background:rgba(91,126,159,.2);filter:blur(11px)}
+body.night .ball{background-image:url(images/planet/planet-night.png);box-shadow:0 0 44px rgba(150,140,210,.35),0 0 0 1px rgba(168,195,217,.18)}
+body.night .shadow{background:radial-gradient(circle,rgba(168,195,217,.22),rgba(168,195,217,0) 65%);bottom:auto;top:34px;left:34px;right:34px;width:auto;height:auto;inset:34px;transform:none;filter:blur(14px)}
+.readonly .ball{filter:grayscale(.55) saturate(.7)}
+.el{position:absolute;width:34px;height:40px;display:flex;align-items:flex-end;justify-content:center;transform-origin:50% 100%;z-index:3}
+.el .in.fly{animation:drift 4.5s ease-in-out infinite}
+.el .in.new{animation:sprout .8s cubic-bezier(.34,1.4,.5,1) both}
+.el .in.fly.new{animation:sprout .8s cubic-bezier(.34,1.4,.5,1) both,drift 4.5s 1s ease-in-out infinite}
+.sp{display:block;height:auto;pointer-events:none;-webkit-user-drag:none}
+.sp.stone{width:22px}.sp.grass{width:28px}.sp.flower{width:24px}
+.sp.bird{width:26px}.sp.butterfly{width:24px}
+.sp.star{width:18px;filter:drop-shadow(0 0 5px rgba(232,201,122,.95));animation:glowp 3s ease-in-out infinite}
+.el.sel .sp{filter:drop-shadow(0 0 4px var(--accent)) drop-shadow(0 0 2px var(--accent))}
+.el.sel .sp.star{filter:drop-shadow(0 0 6px rgba(232,201,122,1)) drop-shadow(0 0 3px var(--accent))}
+.stars{position:absolute;left:46px;top:90px;width:2px;height:2px;border-radius:50%;background:rgba(232,240,247,.85);
+  box-shadow:76px 26px 0 rgba(232,240,247,.4),158px -12px 0 rgba(232,240,247,.65),236px 40px 0 rgba(232,240,247,.35),292px -18px 0 rgba(232,240,247,.6),22px 130px 0 rgba(232,240,247,.3),206px 140px 0 rgba(232,240,247,.35),122px 84px 0 rgba(232,240,247,.25),60px 480px 0 rgba(232,240,247,.3),250px 520px 0 rgba(232,240,247,.25);
+  animation:glowp 5s ease-in-out infinite;display:none}
+body.night .stars{display:block}
+
+/* 模块 */
+.mods{width:100%;max-width:340px;margin-top:30px;padding:0 10px}
+.mods h3{text-align:center;font-weight:400;font-size:16px;letter-spacing:.25em;color:var(--accent2);margin:0 0 12px}
+.mod{border-top:1px solid var(--line);padding:15px 2px}
+.mod:last-child{border-bottom:1px solid var(--line)}
+.modhead{display:flex;align-items:baseline;gap:14px;width:100%;text-align:left}
+.num{font-size:10px;color:var(--hint);letter-spacing:.1em}
+.mname{font-size:18px;color:var(--ink);letter-spacing:.1em}
+.men{margin-left:auto;font-size:9px;letter-spacing:.16em;color:var(--hint)}
+.mbody{margin-top:10px;padding-left:28px}
+.mbody.anim{animation:fadeup .4s ease both}
+.desc{font-size:12px;color:var(--ink3);line-height:2;font-weight:300;margin:0 0 12px}
+
+.monthhead{font-family:'Noto Serif SC',serif;font-size:12px;letter-spacing:.15em;color:var(--accent);margin:14px 0 8px}
+.course{border:1px solid var(--line);border-radius:14px;background:var(--card);margin-bottom:10px;overflow:hidden}
+.chead{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;width:100%;text-align:left}
+.tag{flex:none;font-size:10px;color:#fff;border-radius:999px;padding:2px 8px;margin-top:2px;letter-spacing:.05em}
+.ctitle{font-size:13px;color:var(--ink);line-height:1.7}
+.cdone{flex:none;margin-left:auto;font-size:10.5px;color:#7FA58F;margin-top:3px}
+.cbody{padding:0 14px 14px}
+video{display:block;width:100%;aspect-ratio:16/9;background:#000;border-radius:10px}
+.soon{display:flex;align-items:center;justify-content:center;aspect-ratio:16/9;border-radius:10px;border:1px dashed var(--line2);font-size:12px;color:var(--hint)}
+.crow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px}
+.locked{font-size:12px;color:var(--hint);border:1px dashed var(--line);border-radius:14px;padding:12px 14px;margin-top:4px;line-height:1.8}
+
+.cards{display:flex;gap:10px;justify-content:center}
+.card{width:60px;height:88px;border-radius:10px;border:1px solid var(--line);background:linear-gradient(160deg,var(--cardSolid),var(--card));display:flex;align-items:center;justify-content:center;color:var(--hint);font-size:15px;transition:transform .25s}
+.card:hover{transform:translateY(-4px)}
+.picked{display:flex;flex-direction:column;align-items:center;animation:fadeup .4s ease both}
+.face{width:74px;height:104px;border-radius:10px;border:1px solid var(--line2);background:var(--cardSolid);box-shadow:0 8px 18px -10px rgba(91,126,159,.45);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.face b{font-family:'Noto Serif SC',serif;font-weight:500;font-size:14px;color:var(--ink);letter-spacing:.1em}
+.history{margin-top:16px;border-top:1px dashed var(--line);padding-top:10px}
+.hitem{font-size:12px;color:var(--ink3);line-height:1.8;margin-bottom:6px;font-weight:300}
+
+.letter{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--card);margin:0 18px 8px 0}
+.letter.reply{border-color:var(--line2);background:var(--cardSolid);margin:0 0 8px 18px}
+.letter .meta{font-size:10px;color:var(--hint);letter-spacing:.1em}
+.letter.reply .meta{color:var(--accent)}
+.letter .txt{font-size:12.5px;color:var(--ink2);line-height:1.9;font-weight:300;margin-top:4px;white-space:pre-wrap;word-break:break-word}
+.letter.example{opacity:.6}
+
+.foot{margin-top:34px;text-align:center;padding:0 24px}
+.modal{position:fixed;inset:0;background:rgba(13,21,34,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+.sheet{background:#fff;color:#253544;border-radius:18px;padding:22px;max-width:320px;width:100%;text-align:center}
+.sheet .hint{color:#5E7284}
+.sheet .btn{background:#2B3A4A;color:#F3F7FA;text-decoration:none}
+.sheet .link{color:#5B7E9F}
+
+/* 登录 / 注册 */
+.form{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:26px;width:100%}
+.form .input{width:260px}
+.form .lab{width:260px;font-size:11.5px;color:var(--ink3);letter-spacing:.06em;margin-bottom:-6px;padding-left:16px}
+.links{display:flex;gap:18px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+.okmsg{font-size:11.5px;color:#6F9A82;margin-top:6px;font-weight:300;text-align:center;line-height:1.8}
+
+@keyframes sprout{from{transform:scale(0);opacity:0}60%{transform:scale(1.12)}to{transform:scale(1);opacity:1}}
+@keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes breathe{0%,100%{opacity:.92;transform:scale(1)}50%{opacity:1;transform:scale(1.02)}}
+@keyframes fadeup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes glowp{0%,100%{opacity:.55}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* =========================================================
+   配置
+   ========================================================= */
+var CONFIG = {
+  // 云函数的 HTTP 访问地址（在 CloudBase 控制台给云函数 hlos 配置 HTTP 访问后填入）
+  // 留空，或网址后面加 ?preview=1，就进入"预览模式"：数据只存在这台设备上，用来看效果
+  API_BASE: 'https://herlifeosclub-d5gg2a6psa033713e-1409877564.ap-shanghai.app.tcloudbase.com/hlos',
+  HOME_URL: 'index.html',
+  FOUNDER_COLORS: { Michelle: 'var(--c-Michelle)', Maggie: 'var(--c-Maggie)', Moe: 'var(--c-Moe)', '三人对谈': 'var(--c-talk)' }
+};
+
+// 今日星情的牌（文案请主理人确认，可增删）
+var TAROT = [
+  { name: '月亮', line: '今晚，允许自己慢下来。' },
+  { name: '种子', line: '有些变化，正在看不见的地方发生。' },
+  { name: '灯塔', line: '你已经比想象中走得更远。' },
+  { name: '小船', line: '不必一直划桨，偶尔也可以随波看看风景。' },
+  { name: '钥匙', line: '答案也许早就在你手里，只是还没试过那扇门。' },
+  { name: '远山', line: '看得见远方，脚下这一步就不算白走。' },
+  { name: '晨光', line: '今天不必完美，愿意开始就很好。' },
+  { name: '镜子', line: '对别人的温柔，也留一点给自己。' },
+  { name: '河流', line: '绕路不是失败，水也是这样找到大海的。' },
+  { name: '树屋', line: '给自己留一个不用解释的角落。' },
+  { name: '风筝', line: '线还在你手里，飞高一点也没关系。' },
+  { name: '星图', line: '你走过的每一段，都在慢慢连成形状。' }
+];
+
+var WEATHER = ['有点想放空的晴天', '适合慢慢来的多云', '心里下过一阵小雨，现在停了', '晚风刚刚好'];
+
+// 陪伴天数里程碑：到了这一天会开一朵花
+var MILESTONES = [
+  { day: 7,   color: '#A3B6C6', story: '陪伴满一周，开出第一朵花' },
+  { day: 30,  color: '#D8C09A', story: '陪伴满一个月，又开了一朵花' },
+  { day: 90,  color: '#A9BD9B', story: '陪伴满三个月，开出一朵柔绿色的花' },
+  { day: 180, color: '#C9A9B8', story: '陪伴满半年，开出一朵玫瑰色的花' },
+  { day: 270, color: '#9FB8F0', story: '陪伴满九个月，开出一朵淡蓝色的花' },
+  { day: 360, color: '#E8C97A', story: '陪伴满一年，开出一朵金色的花' }
+];
+
+var DAILY = 3;   // 今日星情、星际信箱每天各 3 条（和云函数保持一致）
+
+
+/* =========================================================
+   数据层 HLOS_Store：页面只通过它读写数据
+   cloud = CloudBase 云函数；preview = 本机预览
+   ========================================================= */
+if (window.HLOS_API) CONFIG.API_BASE = window.HLOS_API;   // 仅供测试
+var PREVIEW = !CONFIG.API_BASE || /[?&]preview=1/.test(location.search);
+
+var HLOS_Store = (function () {
+  function cloud(action, payload) {
+    var body = Object.assign({ action: action }, payload || {});
+    return fetch(CONFIG.API_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // 用 text/plain 避免跨域预检
+      body: JSON.stringify(body)
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok) { var e = new Error(j.error || '网络有点不稳定，请稍后再试'); e.status = r.status; throw e; }
+        return j;
+      });
+    }, function () { throw new Error('网络有点不稳定，请稍后再试'); });
+  }
+
+  // ---- 预览模式：在浏览器里模拟云函数 ----
+  var PREVIEW_COURSES = [
+    { id: 'm1-w1', month: 1, week: 1, founder: 'Maggie', track: '幸福篇', title: '幸福篇 · 第 1 课【待定】', video: '', hasPdf: false },
+    { id: 'm1-w2', month: 1, week: 2, founder: 'Michelle', track: '职涯篇', title: '撕掉隐形标签——你的职业剧本是谁写的？', video: 'images/Videos4intro.mp4', hasPdf: true },
+    { id: 'm1-w3', month: 1, week: 3, founder: 'Moe', track: '财商篇', title: '财商篇 · 第 1 课【待定】', video: '', hasPdf: false },
+    { id: 'm1-w4', month: 1, week: 4, founder: '三人对谈', track: '对谈', title: '第 1 个月 · 三人对谈【主题待定】', video: '', hasPdf: false }
+  ];
+  var KEY = 'hlos_preview_v2';
+  function today(offset) { var t = new Date(Date.now() + 8 * 3600e3 + (offset || 0) * 86400e3); return t.toISOString().slice(0, 10); }
+  function addMonths(s, n) { var p = s.split('-').map(Number); var t = new Date(Date.UTC(p[0], p[1] - 1 + n, p[2])); if (t.getUTCDate() !== p[2]) t.setUTCDate(0); return t.toISOString().slice(0, 10); }
+  function days(a, b) { return Math.round((Date.parse(b) - Date.parse(a)) / 864e5); }
+  function db() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
+  function save(d) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }
+  function shift() { var m = /[?&]day=(\d+)/.exec(location.search); return m ? +m[1] - 1 : 0; } // 预览用：?day=40 假装已经是第 40 天
+  function state(d, withToken) {
+    var t = today(shift()), dur = d.durationMonths || 1, start = d.startDate;
+    var exp = addMonths(start, dur), month = 1;
+    while (month < dur && addMonths(start, month) <= t) month++;
+    var st = { today: t, startDate: start, expiresAt: exp, day: days(start, t) + 1, month: month, daysLeft: Math.max(0, days(t, exp)), active: t < exp };
+    var out = {
+      member: { code: d.code, email: d.email, planetName: d.planetName || '', kind: 'trial' },
+      status: st,
+      courses: st.active ? PREVIEW_COURSES.filter(function (c) { return c.month <= st.month; }) : [],
+      nextMonthAt: st.active && month < dur ? addMonths(start, month) : '',
+      events: d.events || [], letters: d.letters || [],
+      mailLeftToday: DAILY - (d.letters || []).filter(function (l) { return l.from === 'member' && l.date === t; }).length,
+      moodLeftToday: DAILY - (d.events || []).filter(function (e) { return e.type === 'mood' && e.date === t; }).length
+    };
+    if (withToken) out.token = 'preview';
+    return out;
+  }
+  function fail(m) { return Promise.reject(new Error(m)); }
+  function preview(action, p) {
+    var d = db();
+    if (action === 'checkCode') {
+      if (!/^HLOS-/i.test(p.code || '')) return fail('这个注册链接不对，请找主理人确认一下');
+      if (d.code && d.code === p.code.toUpperCase()) return fail('这个注册链接已经用过了，请直接用邮箱登录');
+      return Promise.resolve({ ok: true });
+    }
+    if (action === 'register') {
+      if (p.password.length < 8) return fail('密码至少 8 位');
+      d = { code: p.code.toUpperCase(), email: p.email.trim().toLowerCase(), pw: p.password, durationMonths: 1, startDate: today(),
+        events: [{ type: 'start', day: 1, date: today(), data: {}, createdAt: Date.now() }], letters: [] };
+      save(d); return Promise.resolve(state(d, true));
+    }
+    if (action === 'login') {
+      if (!d.email || d.email !== p.email.trim().toLowerCase() || d.pw !== p.password) return fail('邮箱或密码不对');
+      return Promise.resolve(state(d, true));
+    }
+    if (action === 'forgotPassword') { d.resetCode = '123456'; save(d); return Promise.resolve({ ok: true }); }
+    if (action === 'resetPassword') {
+      if (!d.email || d.email !== p.email.trim().toLowerCase() || p.resetCode !== d.resetCode) return fail('验证码不对或已过期，请重新获取');
+      if (p.password.length < 8) return fail('密码至少 8 位');
+      d.pw = p.password; d.resetCode = ''; save(d); return Promise.resolve(state(d, true));
+    }
+    if (action === 'checkResetKey') return d.email ? Promise.resolve({ email: d.email }) : fail('这个重设链接已失效，请找主理人重新生成');
+    if (action === 'resetByKey') { if (p.password.length < 8) return fail('密码至少 8 位'); d.pw = p.password; save(d); return Promise.resolve(state(d, true)); }
+    if (action === 'logout') return Promise.resolve({ ok: true });
+    if (!d.code || p.token !== 'preview') return fail('登录已过期，请重新登录');
+    var s = state(d);
+    if (action === 'me') return Promise.resolve(s);
+    if (!s.status.active) return fail('会员期已结束，星球现在是只读状态');
+    if (action === 'setName') { d.planetName = String(p.name).slice(0, 16); }
+    else if (action === 'addEvent') {
+      if (p.type === 'class') {
+        if (d.events.some(function (e) { return e.type === 'class' && e.data.courseId === p.courseId; })) return Promise.resolve(s);
+        var c = PREVIEW_COURSES.filter(function (x) { return x.id === p.courseId; })[0];
+        d.events.push({ type: 'class', day: s.status.day, date: s.status.today, data: { courseId: c.id, title: c.title }, createdAt: Date.now() });
+      } else {
+        if (s.moodLeftToday <= 0) return fail('今天已经写下 ' + DAILY + ' 条星情了，明天再来吧');
+        d.events.push({ type: 'mood', day: s.status.day, date: s.status.today, data: { card: p.card, text: p.text }, createdAt: Date.now() });
+      }
+    }
+    else if (action === 'sendLetter') {
+      if (s.mailLeftToday <= 0) return fail('今天已经寄出 ' + DAILY + ' 封信了，明天再写吧');
+      d.letters.push({ from: 'member', text: p.text, day: s.status.day, date: s.status.today, createdAt: Date.now() });
+    }
+    else if (action === 'previewReply') {
+      d.letters.push({ from: 'Maggie', text: '收到你的信了。（这是预览模式里的模拟回信，正式版由三位主理人亲自回复。）', day: s.status.day, date: s.status.today, createdAt: Date.now() });
+    }
+    else if (action === 'getPdf') { return Promise.resolve({ url: 'images/wechat-qr.png' }); }
+    save(d); return Promise.resolve(state(d));
+  }
+
+  function ls(k, v) {
+    try {
+      if (arguments.length === 1) return localStorage.getItem(k) || '';
+      v ? localStorage.setItem(k, v) : localStorage.removeItem(k);
+    } catch (e) { return ''; }
+  }
+  return {
+    mode: PREVIEW ? 'preview' : 'cloud',
+    call: function (action, payload) { return PREVIEW ? preview(action, payload) : cloud(action, payload); },
+    get token() { return ls(PREVIEW ? 'hlos_token_preview' : 'hlos_token'); },
+    set token(v) { ls(PREVIEW ? 'hlos_token_preview' : 'hlos_token', v); },
+    getSeen: function (code) { return +ls('hlos_seen_' + code) || 0; },
+    setSeen: function (code, n) { ls('hlos_seen_' + code, String(n)); }
+  };
+})();
+
+/* =========================================================
+   页面状态
+   ========================================================= */
+// 19:00 – 次日 6:00 是夜晚（按会员手机上的时间）
+var NIGHT_FROM = 19, NIGHT_TO = 6;
+function isNightNow() { var h = new Date().getHours(); return h >= NIGHT_FROM || h < NIGHT_TO; }
+
+var Q = (function () { var o = {}; location.search.replace(/[?&]([^=&]+)=([^&]*)/g, function (_, k, v) { o[k] = decodeURIComponent(v); }); return o; })();
+
+var S = {
+  screen: 'loading',      // loading | login | register | forgot | resetkey | name | grow | planet
+  shown: '',              // 上一次画出来的画面（只有换画面时才播放淡入动画）
+  data: null,
+  err: '', ok: '', busy: false,
+  night: isNightNow(), autoNight: isNightNow(),   // autoNight：按时间应该是白天还是夜晚
+  w: 0, sel: -1, tab: -1, tabAnim: false, openCourse: '',
+  tarot: null, deck: [], moodSaved: false,
+  regCode: '', resetKey: '', resetEmail: '', forgotStep: 1, showPw: false, pdfUrl: '',
+  draftEmail: '', draftPw: '', draftPw2: '', draftRcode: '', draftName: '', draftMood: '', draftMail: '', mailSent: false
+};
+
+var IN_WECHAT = /MicroMessenger/i.test(navigator.userAgent);
+
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function short(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n) + '……' : s; }
+function $(id) { return document.getElementById(id); }
+function cleanUrl() { try { history.replaceState(null, '', location.pathname + (PREVIEW && /[?&]preview=1/.test(location.search) ? '?preview=1' : '')); } catch (e) {} }
+
+/* ---------- 由真实记录生成星球上的元素 ---------- */
+function elements() {
+  var d = S.data; if (!d) return [];
+  var out = [];
+  d.events.forEach(function (e) {
+    if (e.type === 'start') out.push({ type: 'stone', day: 1, at: e.createdAt, story: '来到星球的第一天，安放下一个小小的开始' });
+    if (e.type === 'class') out.push({ type: 'grass', day: e.day, at: e.createdAt, story: '在星光课堂听完《' + e.data.title + '》，长出一株小草' });
+    if (e.type === 'mood') out.push({ type: 'star', day: e.day, at: e.createdAt, story: '今日星情 · 抽到「' + e.data.card + '」：' + short(e.data.text, 40) });
+  });
+  var firstSent = true;
+  d.letters.forEach(function (l) {
+    if (l.from === 'member') { out.push({ type: 'bird', day: l.day, at: l.createdAt, story: firstSent ? '星际信箱寄出第一封信，落下一只小鸟' : '星际信箱又寄出一封信，落下一只小鸟' }); firstSent = false; }
+    else out.push({ type: 'butterfly', day: l.day, at: l.createdAt, story: '收到 ' + l.from + ' 的回信，飞来一只蝴蝶' });
+  });
+  var lastDay = d.status.active ? d.status.day : Math.max(1, Math.round((Date.parse(d.status.expiresAt) - Date.parse(d.status.startDate)) / 864e5));
+  MILESTONES.forEach(function (m) {
+    if (lastDay >= m.day) out.push({ type: 'flower', day: m.day, at: Date.parse(d.status.startDate) + (m.day - 1) * 864e5, color: m.color, story: m.story });
+  });
+  out.sort(function (a, b) { return a.day - b.day || a.at - b.at; });
+  out.forEach(function (el, i) {
+    el.fly = el.type === 'bird' || el.type === 'butterfly' || el.type === 'star';
+    el.angle = ((-104 + i * 137.508) % 360 + 540) % 360 - 180;   // 从左上方开始，按黄金角排开，分布均匀不扎堆
+    el.ring = Math.floor(i / 12) % 3;
+  });
+  return out;
+}
+
+function planetHTML(els, opts) {
+  opts = opts || {};
+  var box = 320, R = 110, c = box / 2, seen = S.data ? HLOS_Store.getSeen(S.data.member.code) : 0, h = '';
+  els.forEach(function (el, i) {
+    var rad = el.angle * Math.PI / 180;
+    var r = el.fly ? R + 16 + el.ring * 10 : R - 2;
+    var x = c + r * Math.sin(rad), y = c - r * Math.cos(rad);
+    var cls = 'in' + (el.fly ? ' fly' : '') + (i >= seen || opts.growAll ? ' new' : '');
+    var dot = '<img class="sp ' + el.type + '" src="images/planet/' + el.type + '.png" alt="">';
+    h += '<button class="el' + (S.sel === i ? ' sel' : '') + '" data-el="' + i + '" aria-label="第 ' + el.day + ' 天" style="left:' + (x - 15) + 'px;top:' + (y - 40) + 'px;' +
+      (el.fly ? '' : 'transform:rotate(' + el.angle + 'deg);') + '">' +
+      '<span class="' + cls + '"' + (opts.growAll ? ' style="animation-delay:' + (i * .25) + 's"' : '') + '>' + dot + '</span></button>';
+  });
+  // data-keep：重画页面时，如果星球没有变化，就保留原来的节点，漂浮动画不会跳
+  return '<div class="stage" data-keep="stage">' + (opts.plain ? '' : '<div class="shadow"></div>') +
+    '<div class="ball' + (opts.plain ? ' plain' : '') + '"></div>' + h + '</div>';
+}
+
+/* =========================================================
+   各个画面
+   ========================================================= */
+function topBar(withToggle) {
+  return '<div class="top"><a class="home" href="' + CONFIG.HOME_URL + '">← 回到主页</a>' +
+    (withToggle ? '<button class="toggle" data-act="night" aria-label="切换白天和夜晚"><span class="' + (S.night ? '' : 'on') + '">☀ 白天</span><span class="' + (S.night ? 'on' : '') + '">☾ 夜晚</span></button>'
+      : '<span class="label">MY PLANET</span>') + '</div>';
+}
+function previewBanner(extra) {
+  return HLOS_Store.mode === 'preview'
+    ? '<div class="banner">预览模式：数据只保存在这台设备上，信件不会送达主理人。' + (extra || '<br>网址后加 <b>?day=40</b> 可以模拟第 40 天。') + '</div>' : '';
+}
+function msg() {
+  return S.err ? '<div class="err">' + esc(S.err) + '</div>' : (S.ok ? '<div class="okmsg">' + esc(S.ok) + '</div>' : '');
+}
+function title(t, sub) {
+  return '<div class="serif" style="font-size:26px;line-height:1.9;color:var(--ink);font-weight:500;text-align:center;margin-top:40px">' + t + '</div>' +
+    '<div class="hint" style="font-size:12.5px;text-align:center;margin-top:10px;color:var(--ink3);padding:0 28px">' + sub + '</div>';
+}
+function emailInput(autofocusHint) {
+  return '<div class="lab">邮箱</div><input id="f-email" class="input" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="name@example.com" value="' + esc(S.draftEmail) + '">';
+}
+function pwInput(label, isNew) {
+  var type = S.showPw ? 'text' : 'password';
+  return '<div class="lab">' + label + '</div><input id="f-pw" class="input" type="' + type + '" autocomplete="' + (isNew ? 'new-password' : 'current-password') + '" placeholder="' + (isNew ? '至少 8 位，含英文和数字' : '') + '" value="' + esc(S.draftPw) + '">' +
+    (isNew ? '<div class="lab">再输入一次</div><input id="f-pw2" class="input" type="' + type + '" autocomplete="new-password" placeholder="确认密码" value="' + esc(S.draftPw2) + '">' : '') +
+    '<button class="link" data-act="showpw" style="margin-top:-4px">' + (S.showPw ? '隐藏密码' : '显示密码') + '</button>';
+}
+// 新密码：至少 8 位，同时有英文字母和数字，两次一致
+function newPwError() {
+  var p = S.draftPw;
+  if (p.length < 8) return '密码至少 8 位';
+  if (!/[A-Za-z]/.test(p) || !/[0-9]/.test(p)) return '密码需要同时包含英文字母和数字';
+  if (p !== S.draftPw2) return '两次输入的密码不一样，再检查一下';
+  return '';
+}
+
+function viewLogin() {
+  return '<div class="wrap">' + topBar(false) + previewBanner('<br>预览时可以先打开 <b>?preview=1&amp;code=HLOS-TEST-0001</b> 注册一个账号。') +
+    title('欢迎回到<br>你的星球', '用注册时的邮箱和密码登录。<br>换手机时，登录一次星球就回来了。') +
+    '<div class="form">' + emailInput() + pwInput('密码', false) + msg() +
+    '<button class="btn" style="margin-top:12px" data-act="login"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? '正在寻找星球…' : '进入星球') + '</button></div>' +
+    '<div class="links"><button class="link" data-act="toforgot">忘记密码？</button></div>' +
+    '<div class="hint" style="text-align:center;margin-top:26px;padding:0 32px">还没有账号？入会后，主理人会把你专属的注册链接发给你。</div>' +
+    '</div>';
+}
+
+function viewRegister() {
+  return '<div class="wrap">' + topBar(false) + previewBanner() +
+    title('欢迎来到<br>你的星球', '这是你专属的注册链接。<br>设置一个登录邮箱和密码，以后换手机也能找回星球。') +
+    planetHTML([], { plain: true }) +
+    '<div class="form" style="margin-top:0">' + emailInput() + pwInput('设置密码', true) + msg() +
+    '<button class="btn" style="margin-top:12px" data-act="register"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? '正在准备星球…' : '创建我的星球') + '</button></div>' +
+    '<div class="links"><button class="link" data-act="tologin">已经注册过了？直接登录</button></div>' +
+    '</div>';
+}
+
+function viewForgot() {
+  var h = '<div class="wrap">' + topBar(false) + previewBanner(S.forgotStep === 2 ? '<br>预览模式的验证码是 <b>123456</b>。' : '');
+  if (S.forgotStep === 1) {
+    h += title('找回密码', '输入注册时用的邮箱，<br>我们会给你寄一个 6 位验证码。') +
+      '<div class="form">' + emailInput() + msg() +
+      '<button class="btn" style="margin-top:12px" data-act="sendcode"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? '正在寄出…' : '发送验证码') + '</button></div>';
+  } else {
+    h += title('设置新密码', '验证码已经寄到 <b>' + esc(S.draftEmail) + '</b>，15 分钟内有效。<br>没收到的话，看看垃圾邮件箱。') +
+      '<div class="form"><div class="lab">验证码</div><input id="f-rcode" class="input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6 位数字" value="' + esc(S.draftRcode) + '">' +
+      pwInput('新密码', true) + msg() +
+      '<button class="btn" style="margin-top:12px" data-act="resetpw"' + (S.busy ? ' disabled' : '') + '>设置新密码</button></div>' +
+      '<div class="links"><button class="link" data-act="sendcode">重新发送验证码</button></div>';
+  }
+  h += '<div class="links"><button class="link" data-act="tologin">← 返回登录</button></div>' +
+    '<div class="hint" style="text-align:center;margin-top:22px;padding:0 32px">邮箱也收不到的话，可以在微信上告诉主理人，她会帮你重设。</div>';
+  return h + '</div>';
+}
+
+function viewResetKey() {
+  return '<div class="wrap">' + topBar(false) + previewBanner() +
+    title('重设密码', '为 <b>' + esc(S.resetEmail) + '</b> 设置一个新密码。<br>设置好以后，其他设备需要重新登录。') +
+    '<div class="form">' + pwInput('新密码', true) + msg() +
+    '<button class="btn" style="margin-top:12px" data-act="resetkey"' + (S.busy ? ' disabled' : '') + '>设置新密码</button></div>' +
+    '</div>';
+}
+
+function viewName() {
+  return '<div class="wrap">' + topBar(false) + previewBanner() +
+    '<div class="serif" style="font-size:27px;line-height:1.9;color:var(--ink);font-weight:500;text-align:center;margin-top:34px">一颗星球，<br>等一个名字。</div>' +
+    '<div class="hint" style="font-size:12.5px;text-align:center;margin-top:10px;color:var(--ink3);line-height:2.1">它会随你的成长慢慢改变。<br>今天，先为它取名。</div>' +
+    planetHTML([], { plain: true }) +
+    '<div style="font-size:12px;color:var(--accent);letter-spacing:.08em">请在此输入你的星球名称 ↓</div>' +
+    '<input id="f-name" class="input serif" style="margin-top:10px" maxlength="16" placeholder="给你的星球取个名字" value="' + esc(S.draftName) + '">' +
+    (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '<div class="hint" style="margin-top:10px">例如：B612星球、晨光星、向日葵星……</div>') +
+    '<button class="btn" style="margin-top:24px" data-act="name"' + (S.busy ? ' disabled' : '') + '>确认命名</button>' +
+    '</div>';
+}
+
+function viewGrow() {
+  return '<div class="wrap">' + topBar(false) +
+    '<div class="serif" style="font-size:13px;letter-spacing:.2em;color:var(--accent2);margin-top:40px">第 ' + S.data.status.day + ' 天</div>' +
+    planetHTML(elements(), { growAll: true }) +
+    '<div class="serif" style="font-size:15px;color:var(--ink2);letter-spacing:.14em">「' + esc(S.data.member.planetName) + '」· 生长中</div>' +
+    '<div class="hint" style="margin-top:8px">星球上的每一样东西，都是一段真实的痕迹</div></div>';
+}
+
+function viewPlanet() {
+  var d = S.data, st = d.status, els = elements(), ro = !st.active;
+  var sel = S.sel >= 0 ? els[S.sel] : null;
+  var h = '<div class="wrap' + (ro ? ' readonly' : '') + '"><div class="stars"></div>' + topBar(true) + previewBanner();
+  h += '<div class="brush" style="font-size:34px;color:var(--ink);letter-spacing:.05em;margin-top:22px;position:relative;z-index:1">' + esc(d.member.planetName) + '</div>';
+  h += '<div style="display:flex;align-items:baseline;gap:14px;margin-top:10px;position:relative;z-index:1">' +
+    '<div style="font-size:12px;color:var(--ink3);font-weight:300">' + (ro ? '已陪你走过一段路' : '第 ' + st.day + ' 天' + (S.night ? ' · 夜' : '')) + '</div>' +
+    (ro ? '' : '<button style="font-size:12px;color:var(--ink2);font-weight:300;border-bottom:1px dashed var(--line2);padding-bottom:1px" data-act="weather">今天：' + WEATHER[S.w] + ' ↻</button>') + '</div>';
+  h += '<div style="position:relative;z-index:1">' + planetHTML(els) + '</div>';
+  h += sel
+    ? '<div style="text-align:center;max-width:290px;animation:fadeup .5s ease both;position:relative;z-index:1"><div class="serif" style="font-size:12px;letter-spacing:.15em;color:var(--accent)">第 ' + sel.day + ' 天</div><div style="font-size:12px;color:var(--ink2);line-height:1.9;margin-top:4px;font-weight:300">' + esc(sel.story) + '</div></div>'
+    : '<div class="hint" style="position:relative;z-index:1">' + (S.night ? '夜里它们也在——点点看' : '点点星球上的小东西，看看它们是哪一天出现的') + '</div>';
+
+  // 会员期
+  h += ro
+    ? '<div class="locked" style="margin:18px 24px 0;text-align:center;position:relative;z-index:1">会员期已于 ' + st.expiresAt + ' 结束。<br>星球和你写下的一切都还在，只是暂时停止了生长。<br>续费后，它会继续长下去。</div>'
+    : '<div class="hint" style="margin-top:14px;position:relative;z-index:1">会员期至 ' + st.expiresAt + ' · 还有 ' + st.daysLeft + ' 天</div>';
+
+  // 三个模块
+  var mods = [
+    { num: '01', name: '星光课堂', en: 'STAR CLASS', body: classBody },
+    { num: '02', name: '今日星情', en: 'TODAY MOOD', body: moodBody },
+    { num: '03', name: '星际信箱', en: 'STAR MAIL', body: mailBody }
+  ];
+  h += '<div class="mods" style="position:relative;z-index:1"><h3 class="brush">' + (ro ? '你的星球记录' : '今天，你可以') + '</h3>';
+  mods.forEach(function (m, i) {
+    h += '<div class="mod"><button class="modhead" data-act="tab" data-i="' + i + '"><span class="num">' + m.num + '</span><span class="mname brush">' + m.name + '</span><span class="men">' + m.en + '</span></button>' +
+      (S.tab === i ? '<div class="mbody' + (S.tabAnim ? ' anim' : '') + '">' + m.body(d, ro) + '</div>' : '') + '</div>';
+  });
+  h += '</div>';
+  h += '<div class="foot"><div class="hint">' + esc(d.member.email) + '</div><button class="link" style="margin-top:6px" data-act="logout">退出登录</button></div>';
+  if (S.pdfUrl) h += pdfSheet();
+  return h + '</div>';
+}
+
+// 微信里经常不能直接下载文件，所以给一个"打开 / 复制链接"的小窗
+function pdfSheet() {
+  return '<div class="modal" data-act="pdfclose"><div class="sheet" data-stop="1">' +
+    '<div class="serif" style="font-size:16px;font-weight:500">作业模板</div>' +
+    '<div class="hint" style="margin:10px 0 16px;font-size:12px">微信里可能无法直接保存文件。<br>可以先点「打开」看看；想保存的话，<br>点「复制链接」，粘贴到手机浏览器里打开。<br>链接 1 小时内有效。</div>' +
+    '<a class="btn sm" href="' + esc(S.pdfUrl) + '" target="_blank" rel="noopener">打开</a>' +
+    '<div class="links" style="margin-top:14px"><button class="link" data-act="pdfcopy">复制链接</button><button class="link" data-act="pdfclose">关闭</button></div>' +
+    (S.ok ? '<div class="okmsg">' + esc(S.ok) + '</div>' : '') +
+    '</div></div>';
+}
+
+function classBody(d, ro) {
+  if (ro) return '<p class="desc">会员期结束后，星光课堂暂时关闭。续费后可以继续收听。</p>';
+  var done = {};
+  d.events.forEach(function (e) { if (e.type === 'class') done[e.data.courseId] = true; });
+  var h = '<p class="desc">听主理人准备的音频与视频，完成一个小小的练习——这是往内输入。每一次学习，星球上都会长出新的绿。</p>';
+  var months = {};
+  d.courses.forEach(function (c) { (months[c.month] = months[c.month] || []).push(c); });
+  Object.keys(months).sort(function (a, b) { return b - a; }).forEach(function (m) {
+    h += '<div class="monthhead">第 ' + m + ' 个月' + (+m === d.status.month ? ' · 本月' : '') + '</div>';
+    months[m].sort(function (a, b) { return a.week - b.week; }).forEach(function (c) {
+      var open = S.openCourse === c.id;
+      h += '<div class="course"><button class="chead" data-act="course" data-id="' + c.id + '">' +
+        '<span class="tag" style="background:' + (CONFIG.FOUNDER_COLORS[c.founder] || 'var(--accent)') + '">' + esc(c.week === 4 ? '对谈' : c.founder) + '</span>' +
+        '<span class="ctitle">' + esc(c.title) + '</span>' + (done[c.id] ? '<span class="cdone">已听完 ✓</span>' : '') + '</button>';
+      if (open) {
+        // data-keep：重画页面时保留同一个播放器，正在播放的视频不会被打断
+        h += '<div class="cbody">' + (c.video
+          ? '<video data-keep="v-' + c.id + '" src="' + esc(c.video) + '" controls preload="metadata" playsinline webkit-playsinline x5-playsinline></video>'
+          : '<div class="soon">视频即将上线</div>');
+        h += '<div class="crow">' + (done[c.id] ? '<span class="hint">星球上已经为这节课长出了一株小草</span>'
+          : '<button class="btn sm" data-act="classdone" data-id="' + c.id + '"' + (c.video ? '' : ' disabled') + '>我听完了 ✦</button>');
+        if (c.hasPdf) h += '<button class="link" data-act="pdf" data-id="' + c.id + '">下载作业模板 ↓</button>';
+        h += '</div></div>';
+      }
+      h += '</div>';
+    });
+  });
+  if (d.nextMonthAt) h += '<div class="locked">第 ' + (d.status.month + 1) + ' 个月的课，会在 ' + d.nextMonthAt + ' 开放。</div>';
+  return h;
+}
+
+function moodBody(d, ro) {
+  var moods = d.events.filter(function (e) { return e.type === 'mood'; }).slice().reverse();
+  var left = d.moodLeftToday == null ? DAILY : d.moodLeftToday;
+  var h = '';
+  if (!ro) {
+    h += '<p class="desc">凭直觉挑一张牌，再自由写下此刻的心情、收获或情绪——这是往外表达。每一次表达，都会变成星球上的一颗金色新星。</p>';
+    if (!S.tarot && left <= 0) {
+      h += '<div class="locked" style="text-align:center">今天的 ' + DAILY + ' 条星情都写好了。<br>明天再来抽一张吧。</div>';
+    } else if (!S.tarot) {
+      h += '<div class="cards">' + [0, 1, 2].map(function (i) { return '<button class="card" data-act="draw" data-i="' + i + '" aria-label="抽一张牌">✶</button>'; }).join('') + '</div>' +
+        '<div class="hint" style="text-align:center;margin-top:9px">凭直觉，抽一张 · 今天还可以写 ' + left + ' 条</div>';
+    } else {
+      h += '<div class="picked"><div class="face"><span style="color:var(--hint);font-size:13px">✶</span><b>' + esc(S.tarot.name) + '</b></div>' +
+        '<div style="font-size:12.5px;color:var(--ink2);font-weight:300;margin-top:10px;text-align:center">' + esc(S.tarot.line) + '</div>';
+      if (!S.moodSaved) {
+        h += '<textarea id="f-mood" class="ta" style="max-width:260px;height:72px;margin-top:12px" maxlength="500" placeholder="接着写下此刻的心情、收获或情绪……">' + esc(S.draftMood) + '</textarea>' +
+          (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '') +
+          '<div style="display:flex;align-items:center;gap:16px;margin-top:12px"><button class="btn sm" data-act="moodsave"' + (S.busy ? ' disabled' : '') + '>留在星球上 ✦</button><button class="link" data-act="redraw">换一张 ↻</button></div>';
+      } else {
+        h += '<div style="font-size:12px;color:var(--ink2);font-weight:300;margin-top:14px;text-align:center;line-height:1.9">已化作一颗金色的新星，落在「' + esc(d.member.planetName) + '」上 ✦<br>回到上面的星球，点点那颗会发光的</div>' +
+          (left > 0 ? '<button class="link" style="margin-top:10px" data-act="redraw">再抽一张 ↻（今天还可以写 ' + left + ' 条）</button>'
+            : '<div class="hint" style="margin-top:10px">今天的 ' + DAILY + ' 条星情都写好了，明天再来吧</div>');
+      }
+      h += '</div>';
+    }
+  }
+  if (moods.length) {
+    h += '<div class="history"><div class="hint" style="margin-bottom:6px">' + (ro ? '你写下的星情' : '最近的星情') + '</div>';
+    moods.slice(0, ro ? 50 : 3).forEach(function (e) { h += '<div class="hitem">第 ' + e.day + ' 天 ·「' + esc(e.data.card) + '」' + esc(e.data.text) + '</div>'; });
+    h += '</div>';
+  } else if (ro) h += '<p class="desc">还没有写下星情。</p>';
+  return h;
+}
+
+function mailBody(d, ro) {
+  var h = '<p class="desc">与三位主理人双向通信。她们，是你星球上唯一的来访者。</p>';
+  if (!d.letters.length) {
+    h += '<div class="hint" style="margin-bottom:6px">示例</div>' +
+      '<div class="letter example"><div class="meta">第 3 天 · 你寄出</div><div class="txt">「最近总觉得自己走得太慢了……」</div></div>' +
+      '<div class="letter reply example"><div class="meta">第 4 天 · Maggie 的回信</div><div class="txt">「慢不是停。你的星球上又长出了新的东西，就是证据。」</div></div>';
+  }
+  d.letters.forEach(function (l) {
+    var me = l.from === 'member';
+    h += '<div class="letter' + (me ? '' : ' reply') + '"><div class="meta">第 ' + l.day + ' 天 · ' + (me ? '你寄出' : esc(l.from) + ' 的回信') + '</div><div class="txt">' + esc(l.text) + '</div></div>';
+  });
+  if (ro) return h + '<div class="locked">会员期结束后，信箱暂时关闭。</div>';
+  var left = d.mailLeftToday;
+  h += '<textarea id="f-mail" class="ta" style="height:90px;margin-top:6px" maxlength="1000" placeholder="写一封给主理人的信……"' + (left <= 0 ? ' disabled' : '') + '>' + esc(S.draftMail) + '</textarea>' +
+    (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '') +
+    '<div style="display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap"><button class="btn sm" data-act="mail"' + (left <= 0 || S.busy ? ' disabled' : '') + '>寄出 ✉</button>' +
+    '<span class="hint">' + (S.mailSent ? '信已寄出，主理人会在 1–3 天内回信' : (left > 0 ? '今天还可以寄 ' + left + ' 封' : '今天的 ' + DAILY + ' 封信都寄出了，明天再写吧')) + '</span></div>';
+  if (HLOS_Store.mode === 'preview' && d.letters.some(function (l) { return l.from === 'member'; }))
+    h += '<div style="margin-top:12px"><button class="link" data-act="fakereply">（预览用）模拟一封主理人回信</button></div>';
+  return h;
+}
+
+/* =========================================================
+   渲染与交互
+   ========================================================= */
+function render() {
+  var app = $('app'), old = {};
+  // 记下可以保留的节点（播放器、星球），重画后原样放回去
+  Array.prototype.forEach.call(app.querySelectorAll('[data-keep]'), function (n) { old[n.getAttribute('data-keep')] = n; });
+  document.body.classList.toggle('night', S.screen === 'planet' && S.night);
+  var v = { loading: function () { return '<div class="wrap"><div class="hint" style="margin-top:40vh">正在打开星球…</div></div>'; },
+    login: viewLogin, register: viewRegister, forgot: viewForgot, resetkey: viewResetKey,
+    name: viewName, grow: viewGrow, planet: viewPlanet }[S.screen];
+  app.innerHTML = v();
+  if (S.screen !== S.shown && app.firstChild) app.firstChild.classList.add('fade');   // 只有换画面时才淡入
+  S.shown = S.screen; S.tabAnim = false;
+  Array.prototype.forEach.call(app.querySelectorAll('[data-keep]'), function (n) {
+    var o = old[n.getAttribute('data-keep')];
+    if (o && o._sig === n.outerHTML) n.parentNode.replaceChild(o, n);
+    else n._sig = n.outerHTML;
+  });
+  // 新长出来的东西只在第一次出现时播放"冒出来"的动画
+  if (S.screen === 'planet') HLOS_Store.setSeen(S.data.member.code, elements().length);
+}
+
+function setData(d) {
+  if (d.token) { HLOS_Store.token = d.token; delete d.token; }
+  S.data = d; S.err = '';
+  d.events = d.events || []; d.letters = d.letters || [];
+}
+
+function go(d) {
+  setData(d);
+  S.draftPw = ''; S.draftPw2 = ''; S.draftRcode = ''; S.showPw = false; S.ok = '';
+  S.screen = d.member.planetName ? 'planet' : 'name';
+  render();
+}
+
+function act(action, payload) {
+  S.busy = true; S.err = ''; S.ok = ''; render();
+  return HLOS_Store.call(action, Object.assign({ token: HLOS_Store.token }, payload)).then(function (d) {
+    S.busy = false; return d;
+  }, function (e) {
+    S.busy = false; S.err = e.message;
+    if (e.status === 401 && ['planet', 'name', 'grow'].indexOf(S.screen) >= 0) { HLOS_Store.token = ''; S.screen = 'login'; }
+    render(); throw e;
+  });
+}
+
+function copyText(t) {
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(t);
+  return new Promise(function (ok, no) {
+    var ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, t.length);
+    var r = false; try { r = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta); r ? ok() : no();
+  });
+}
+
+var DRAFTS = { 'f-email': 'draftEmail', 'f-pw': 'draftPw', 'f-pw2': 'draftPw2', 'f-rcode': 'draftRcode', 'f-name': 'draftName', 'f-mood': 'draftMood', 'f-mail': 'draftMail' };
+document.addEventListener('input', function (e) { var k = DRAFTS[e.target.id]; if (k) S[k] = e.target.value; });
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter') return;
+  var a = { login: 'login', register: 'register', resetkey: 'resetkey', name: 'name' }[S.screen];
+  if (S.screen === 'forgot') a = S.forgotStep === 1 ? 'sendcode' : 'resetpw';
+  if (a && e.target.tagName === 'INPUT') handle(a);
+});
+document.addEventListener('click', function (e) {
+  if (e.target.closest('[data-stop]') && !e.target.closest('[data-act]')) return;
+  var b = e.target.closest('[data-act],[data-el]');
+  if (!b || b.disabled) return;
+  if (b.hasAttribute('data-el')) { var i = +b.getAttribute('data-el'); S.sel = S.sel === i ? -1 : i; return render(); }
+  handle(b.getAttribute('data-act'), b);
+});
+
+function handle(a, b) {
+  var id = b && b.getAttribute('data-id');
+  var email = S.draftEmail.trim();
+  switch (a) {
+    case 'night': S.night = !S.night; return render();
+    case 'weather': S.w = (S.w + 1) % WEATHER.length; return render();
+    case 'tab': var i = +b.getAttribute('data-i'); S.tab = S.tab === i ? -1 : i; S.tabAnim = S.tab >= 0; S.err = ''; S.mailSent = false; return render();
+    case 'course': S.openCourse = S.openCourse === id ? '' : id; return render();
+    case 'showpw': S.showPw = !S.showPw; return render();
+
+    case 'tologin': S.screen = 'login'; S.err = ''; S.ok = ''; S.draftPw = ''; S.draftPw2 = ''; cleanUrl(); return render();
+    case 'toforgot': S.screen = 'forgot'; S.forgotStep = 1; S.err = ''; S.ok = ''; return render();
+
+    case 'login':
+      if (!email || !S.draftPw) { S.err = '请填写邮箱和密码'; return render(); }
+      return act('login', { email: email, password: S.draftPw }).then(go, function () {});
+
+    case 'register':
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { S.err = '邮箱格式好像不太对'; return render(); }
+      if (newPwError()) { S.err = newPwError(); return render(); }
+      return act('register', { code: S.regCode, email: email, password: S.draftPw }).then(function (d) { cleanUrl(); go(d); }, function () {});
+
+    case 'sendcode':
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { S.err = '邮箱格式好像不太对'; return render(); }
+      return act('forgotPassword', { email: email }).then(function () {
+        S.forgotStep = 2; S.err = ''; S.ok = '如果这个邮箱注册过，验证码已经寄出了。'; render();
+      }, function () {});
+
+    case 'resetpw':
+      if (!/^\d{6}$/.test(S.draftRcode.trim())) { S.err = '请输入邮件里的 6 位验证码'; return render(); }
+      if (newPwError()) { S.err = newPwError(); return render(); }
+      return act('resetPassword', { email: email, resetCode: S.draftRcode.trim(), password: S.draftPw }).then(go, function () {});
+
+    case 'resetkey':
+      if (newPwError()) { S.err = newPwError(); return render(); }
+      return act('resetByKey', { key: S.resetKey, password: S.draftPw }).then(function (d) { cleanUrl(); go(d); }, function () {});
+
+    case 'name':
+      var n = S.draftName.trim();
+      if (!n) { S.err = '先给它取个名字，再出发 ✍'; return render(); }
+      return act('setName', { name: n }).then(function (d) {
+        setData(d); S.screen = 'grow'; render();
+        setTimeout(function () { S.screen = 'planet'; render(); }, 2600);
+      }, function () {});
+
+    case 'classdone':
+      return act('addEvent', { type: 'class', courseId: id }).then(function (d) { setData(d); render(); }, function () {});
+
+    case 'pdf':
+      return act('getPdf', { courseId: id }).then(function (r) {
+        if (IN_WECHAT) { S.pdfUrl = r.url; render(); } else { render(); location.href = r.url; }
+      }, function () {});
+    case 'pdfcopy': copyText(S.pdfUrl).then(function () { S.ok = '已复制，去浏览器里粘贴打开吧'; render(); }, function () { prompt('请长按复制这个链接：', S.pdfUrl); }); return;
+    case 'pdfclose': S.pdfUrl = ''; S.ok = ''; return render();
+
+    case 'draw':
+      if (!S.deck.length) S.deck = TAROT.slice().sort(function () { return Math.random() - .5; });
+      S.tarot = S.deck.pop(); S.moodSaved = false; S.err = ''; return render();
+    case 'redraw': S.tarot = null; S.moodSaved = false; S.err = ''; return render();
+    case 'moodsave':
+      var t = S.draftMood.trim();
+      if (!t) { S.err = '写一点点也可以'; return render(); }
+      return act('addEvent', { type: 'mood', card: S.tarot.name, text: t }).then(function (d) {
+        setData(d); S.draftMood = ''; S.moodSaved = true; render();
+      }, function () {});
+
+    case 'mail':
+      var m = S.draftMail.trim();
+      if (!m) { S.err = '信还是空的'; return render(); }
+      return act('sendLetter', { text: m }).then(function (d) { setData(d); S.draftMail = ''; S.mailSent = true; render(); }, function () {});
+    case 'fakereply':
+      return act('previewReply', {}).then(function (d) { setData(d); render(); }, function () {});
+
+    case 'logout':
+      if (!confirm('退出登录？星球会一直在，下次用邮箱和密码登录就能回来。')) return;
+      HLOS_Store.call('logout', { token: HLOS_Store.token }).catch(function () {});
+      HLOS_Store.token = ''; S.data = null; S.draftPw = ''; S.screen = 'login'; S.tab = -1; S.err = ''; return render();
+  }
+}
+
+/* ---------- 到点自动切换白天 / 夜晚 ----------
+   页面一直开着时，到了 6:00 或 19:00 自动切换；手动切换的效果保留到下一个切换时间 */
+function checkDayNight() {
+  var n = isNightNow();
+  if (n === S.autoNight) return;
+  var el = document.activeElement;
+  if (el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT')) return;   // 正在写字时先不打扰，下一分钟再看
+  S.autoNight = n; S.night = n;
+  if (S.screen === 'planet') render();
+}
+setInterval(checkDayNight, 60000);
+document.addEventListener('visibilitychange', function () { if (!document.hidden) checkDayNight(); });   // 从后台切回来时马上检查
+
+/* ---------- 启动 ---------- */
+(function boot() {
+  S.w = new Date().getDate() % WEATHER.length;
+  render();
+  // 回信台生成的重设密码链接：planet.html?reset=…
+  if (Q.reset) {
+    S.resetKey = Q.reset;
+    return HLOS_Store.call('checkResetKey', { key: Q.reset }).then(function (r) {
+      S.resetEmail = r.email; S.screen = 'resetkey'; render();
+    }, function (e) { cleanUrl(); S.screen = 'login'; S.err = e.message; render(); });
+  }
+  // 注册链接：planet.html?code=HLOS-XXXX-XXXX
+  if (Q.code) {
+    S.regCode = Q.code.trim().toUpperCase();
+    return HLOS_Store.call('checkCode', { code: S.regCode }).then(function () {
+      S.screen = 'register'; render();
+    }, function (e) { cleanUrl(); S.screen = 'login'; S.err = e.message; render(); });
+  }
+  if (!HLOS_Store.token) { S.screen = 'login'; return render(); }
+  HLOS_Store.call('me', { token: HLOS_Store.token }).then(go, function (e) {
+    if (e.status === 401 || HLOS_Store.mode === 'preview') HLOS_Store.token = '';
+    S.screen = 'login'; S.err = e.message; render();
+  });
+})();
+</script>
+</body>
+</html>
