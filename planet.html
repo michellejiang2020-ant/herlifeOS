@@ -544,7 +544,7 @@ function classBody(d, ro) {
       if (open) {
         // data-keep：重画页面时保留同一个播放器，正在播放的视频不会被打断
         h += '<div class="cbody">' + (c.video
-          ? '<video data-keep="v-' + c.id + '" src="' + esc(c.video) + '" controls preload="metadata" playsinline webkit-playsinline x5-playsinline></video>'
+          ? '<video data-keep="v-' + c.id + '" src="' + esc(c.video) + '" controls controlslist="nodownload" oncontextmenu="return false" preload="metadata" playsinline webkit-playsinline x5-playsinline></video>'
           : '<div class="soon">视频即将上线</div>');
         h += '<div class="crow">' + (done[c.id] ? '<span class="hint">星球上已经为这节课长出了一株小草</span>'
           : '<button class="btn sm" data-act="classdone" data-id="' + c.id + '"' + (c.video ? '' : ' disabled') + '>我听完了 ✦</button>');
@@ -617,6 +617,9 @@ function mailBody(d, ro) {
 /* =========================================================
    渲染与交互
    ========================================================= */
+// 视频地址带有定时更新的签名（?t=…），比较时去掉，同一节课的播放器就不会因为签名换了而被重建
+function keySig(n) { return n.outerHTML.replace(/\?t=[^"]*/g, ''); }
+
 function render() {
   var app = $('app'), old = {};
   // 记下可以保留的节点（播放器、星球），重画后原样放回去
@@ -630,8 +633,8 @@ function render() {
   S.shown = S.screen; S.tabAnim = false;
   Array.prototype.forEach.call(app.querySelectorAll('[data-keep]'), function (n) {
     var o = old[n.getAttribute('data-keep')];
-    if (o && o._sig === n.outerHTML) n.parentNode.replaceChild(o, n);
-    else n._sig = n.outerHTML;
+    if (o && o._sig === keySig(n)) n.parentNode.replaceChild(o, n);
+    else n._sig = keySig(n);
   });
   // 新长出来的东西只在第一次出现时播放"冒出来"的动画
   if (S.screen === 'planet') HLOS_Store.setSeen(S.data.member.code, elements().length);
@@ -778,6 +781,21 @@ function checkDayNight() {
   if (S.screen === 'planet') render();
 }
 setInterval(checkDayNight, 60000);
+// 视频签名地址过期（页面开着超过几个小时）后会播不了：重新取一次地址，从原来的位置接着播
+document.addEventListener('timeupdate', function (e) { if (e.target.tagName === 'VIDEO' && e.target.currentTime) e.target._at = e.target.currentTime; }, true);
+document.addEventListener('error', function (e) {
+  var v = e.target;
+  if (!v || v.tagName !== 'VIDEO' || !HLOS_Store.token || (v._retry && Date.now() - v._retry < 60000)) return;
+  v._retry = Date.now();
+  var id = (v.getAttribute('data-keep') || '').replace(/^v-/, ''), at = v.currentTime || v._at || 0;
+  HLOS_Store.call('me', { token: HLOS_Store.token }).then(function (d) {
+    setData(d);
+    var c = (d.courses || []).filter(function (x) { return x.id === id; })[0];
+    if (!c || !c.video || c.video === v.getAttribute('src')) return;
+    v.addEventListener('loadedmetadata', function () { if (at) v.currentTime = at; }, { once: true });
+    v.setAttribute('src', c.video);
+  }, function () {});
+}, true);
 document.addEventListener('visibilitychange', function () { if (!document.hidden) checkDayNight(); });   // 从后台切回来时马上检查
 
 /* ---------- 启动 ---------- */
