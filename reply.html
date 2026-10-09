@@ -135,6 +135,14 @@ function renderMember(m) {
     if (S.resetLink) h += linkBox(S.resetLink) + '<div class="sub">把这条链接发给她，7 天内有效，用一次就失效。</div>';
   }
   h += '</div>';
+  // 会员期：内测转正式 / 正式会员续一年，都在原账号上延长
+  h += '<div class="box"><div class="row"><span class="sub" style="margin:0">' + (m.kind === 'trial' ? '内测会员 · ' : '正式会员 · ') +
+    (st ? (st.active ? '会员期至 ' + st.expiresAt : '已于 ' + st.expiresAt + ' 到期') : '尚未注册，期限从注册那天开始算') + '</span>' +
+    '<button class="ghost" data-a="extend" data-m="12"' + (S.busy ? ' disabled' : '') + '>' + (m.kind === 'trial' ? '转为正式会员（+12 个月）' : '续期 12 个月') + '</button></div>' +
+    '<div class="sub">还在期内：接在原到期日后面续；已经过期：从今天起重新算。星球、信件、听课记录都保留。</div>' +
+    (m.renewals && m.renewals.length ? m.renewals.map(function (x) {
+      return '<div class="sub">' + when(x.at) + ' · ' + (x.by ? esc(x.by) + ' ' : '') + '续了 ' + x.months + ' 个月' + (x.to ? '，到期日 ' + esc(x.from) + ' → ' + esc(x.to) : '（当时尚未注册）') + '</div>';
+    }).join('') : '') + (S.extMsg ? '<div class="ok">' + esc(S.extMsg) + '</div>' : '') + '</div>';
   if (m.moods.length) {
     h += '<div class="box"><div class="sub" style="margin:0 0 8px">最近的今日星情（供回信时参考）</div>' +
       m.moods.map(function (x) { return '<div class="mood">第 ' + x.day + ' 天 ·「' + esc(x.card) + '」' + esc(x.text) + '</div>'; }).join('') + '</div>';
@@ -167,7 +175,7 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.t
 document.addEventListener('click', function (e) { var b = e.target.closest('[data-a]'); if (b && !b.disabled) act(b.getAttribute('data-a'), b); });
 
 function act(a, b) {
-  S.okMsg = '';
+  S.okMsg = ''; S.extMsg = '';
   if (a === 'login') {
     S.pw = document.getElementById('pw').value;
     return call('f_login').then(function () { try { sessionStorage.setItem('hlos_f_pw', S.pw); } catch (x) {} S.err = ''; render(); if (S.me) load(); },
@@ -184,6 +192,19 @@ function act(a, b) {
     S.busy = true; render();
     return call('f_resetLink', { code: S.open }).then(function (r) {
       S.busy = false; S.err = ''; S.resetLink = PLANET_URL + '?reset=' + r.key; render();
+    }, function (e) { S.busy = false; S.err = e.message; render(); });
+  }
+  if (a === 'extend') {
+    var em = S.members.filter(function (x) { return x.code === S.open; })[0], months = +b.getAttribute('data-m');
+    var est = em.status, who = em.note || em.email || em.code;
+    var msg = est ? '给「' + who + '」续 ' + months + ' 个月？\n\n' + (est.active ? '会员期会从 ' + est.expiresAt + ' 再往后延 ' + months + ' 个月。' : '她已于 ' + est.expiresAt + ' 到期，会从今天起重新算 ' + months + ' 个月。')
+      : '给「' + who + '」加 ' + months + ' 个月？她注册后会员期一共 ' + ((em.durationMonths || 12) + months) + ' 个月。';
+    if (!confirm(msg + '\n\n请确认已经收到款项。点一次就加一次，不要重复点。')) return;
+    S.busy = true; render();
+    return call('f_extend', { code: S.open, months: months, founder: S.me }).then(function (r) {
+      S.members = r.members; S.busy = false; S.err = '';
+      var nm = r.members.filter(function (x) { return x.code === S.open; })[0];
+      S.extMsg = '已续期' + (nm && nm.status ? '，新的到期日是 ' + nm.status.expiresAt : '') + '。她下次打开星球就能看到。'; render();
     }, function (e) { S.busy = false; S.err = e.message; render(); });
   }
   if (a === 'reply') {

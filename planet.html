@@ -207,10 +207,10 @@ var HLOS_Store = (function () {
 
   // ---- 预览模式：在浏览器里模拟云函数 ----
   var PREVIEW_COURSES = [
-    { id: 'm1-w1', month: 1, week: 1, founder: 'Maggie', track: '幸福篇', title: '幸福篇 · 第 1 课【待定】', video: '', hasPdf: false },
-    { id: 'm1-w2', month: 1, week: 2, founder: 'Michelle', track: '职涯篇', title: '撕掉隐形标签——你的职业剧本是谁写的？', video: 'images/Videos4intro.mp4', hasPdf: true },
-    { id: 'm1-w3', month: 1, week: 3, founder: 'Moe', track: '财商篇', title: '财商篇 · 第 1 课【待定】', video: '', hasPdf: false },
-    { id: 'm1-w4', month: 1, week: 4, founder: '三人对谈', track: '对谈', title: '第 1 个月 · 三人对谈【主题待定】', video: '', hasPdf: false }
+    { id: 'm1-w1', month: 1, week: 1, founder: 'Maggie', track: '内在系统', title: '内在系统 第1站', video: '', hasPdf: false },
+    { id: 'm1-w2', month: 1, week: 2, founder: 'Michelle', track: '路径系统', title: '路径系统 第1站', video: 'images/Videos4intro.mp4', hasPdf: true },
+    { id: 'm1-w3', month: 1, week: 3, founder: 'Moe', track: '安全系统', title: '安全系统 第1站', video: '', hasPdf: false },
+    { id: 'm1-w4', month: 1, week: 4, founder: '三人对谈', track: '对谈', title: '三人对谈 第1站', video: '', hasPdf: false }
   ];
   var KEY = 'hlos_preview_v2';
   function today(offset) { var t = new Date(Date.now() + 8 * 3600e3 + (offset || 0) * 86400e3); return t.toISOString().slice(0, 10); }
