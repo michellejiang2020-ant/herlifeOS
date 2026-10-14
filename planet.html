@@ -207,9 +207,9 @@ var HLOS_Store = (function () {
 
   // ---- 预览模式：在浏览器里模拟云函数 ----
   var PREVIEW_COURSES = [
-    { id: 'm1-w1', month: 1, week: 1, founder: 'Maggie', track: '内在系统', title: '内在系统 第1站', video: '', hasPdf: false },
-    { id: 'm1-w2', month: 1, week: 2, founder: 'Michelle', track: '路径系统', title: '路径系统 第1站', video: 'images/Videos4intro.mp4', hasPdf: true },
-    { id: 'm1-w3', month: 1, week: 3, founder: 'Moe', track: '安全系统', title: '安全系统 第1站', video: '', hasPdf: false },
+    { id: 'm1-w1', month: 1, week: 1, founder: 'Maggie', track: '内在系统', title: '内在系统 第1站', video: '', cover: 'images/planet/cover-m1-w1.jpg', hasPdf: false },
+    { id: 'm1-w2', month: 1, week: 2, founder: 'Michelle', track: '路径系统', title: '路径系统 第1站', video: 'images/Videos4intro.mp4', cover: 'images/planet/cover-m1-w2.jpg', hasPdf: true },
+    { id: 'm1-w3', month: 1, week: 3, founder: 'Moe', track: '安全系统', title: '安全系统 第1站', video: '', cover: 'images/planet/cover-m1-w3.jpg', hasPdf: false },
     { id: 'm1-w4', month: 1, week: 4, founder: '三人对谈', track: '对谈', title: '三人对谈 第1站', video: '', hasPdf: false }
   ];
   var KEY = 'hlos_preview_v2';
@@ -544,7 +544,7 @@ function classBody(d, ro) {
       if (open) {
         // data-keep：重画页面时保留同一个播放器，正在播放的视频不会被打断
         h += '<div class="cbody">' + (c.video
-          ? '<video data-keep="v-' + c.id + '" src="' + esc(c.video) + '" controls controlslist="nodownload" oncontextmenu="return false" preload="metadata" playsinline webkit-playsinline x5-playsinline></video>'
+          ? '<video data-keep="v-' + c.id + '" src="' + esc(c.video) + '"' + (c.cover ? ' poster="' + esc(c.cover) + '"' : '') + ' controls controlslist="nodownload" oncontextmenu="return false" preload="metadata" playsinline webkit-playsinline x5-playsinline></video>'
           : '<div class="soon">视频即将上线</div>');
         h += '<div class="crow">' + (done[c.id] ? '<span class="hint">星球上已经为这节课长出了一株小草</span>'
           : '<button class="btn sm" data-act="classdone" data-id="' + c.id + '"' + (c.video ? '' : ' disabled') + '>我听完了 ✦</button>');
