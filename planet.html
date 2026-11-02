@@ -302,7 +302,11 @@ var HLOS_Store = (function () {
       if (!p.quizType) return fail('请选择你的测评结果');
       var g = p.guide || d.guide;
       if (!g) return fail('请选择一位星际领航员');
-      if (g !== d.guide) { if (!s.member.guideCanChange) return fail('星际领航员满 ' + GUIDE_MONTHS + ' 个月才能更换'); d.guide = g; d.guideSince = s.status.today; }
+      if (g !== d.guide) {
+        if (!s.member.guideCanChange) return fail('星际领航员满 ' + GUIDE_MONTHS + ' 个月才能更换');
+        if (d.guide && !p.reason) return fail('请写一下想更换的原因');
+        d.guide = g; d.guideSince = s.status.today;
+      }
       d.quizType = p.quizType;
     }
     else if (action === 'addEvent') {
@@ -353,7 +357,7 @@ var Q = (function () { var o = {}; location.search.replace(/[?&]([^=&]+)=([^&]*)
 
 var S = {
   screen: 'loading',      // loading | login | register | forgot | resetkey | profile | name | grow | planet
-  draftQuiz: '', draftGuide: '', editProfile: false,   // profile：首次登录两题；editProfile = 从星球页进来修改
+  draftQuiz: '', draftGuide: '', draftReason: '', editProfile: false,   // profile：首次登录两题；editProfile = 从星球页进来修改
   shown: '',              // 上一次画出来的画面（只有换画面时才播放淡入动画）
   data: null,
   err: '', ok: '', busy: false,
@@ -516,7 +520,13 @@ function viewProfile() {
       GUIDES.map(function (g) {
         return '<button class="opt' + (S.draftGuide === g.name ? ' on' : '') + '" data-act="pickguide" data-v="' + g.name + '"><img src="' + guideImg(g.name) + '" alt="">' +
           '<span><b>' + g.name + ' · ' + g.track + '</b><small>' + g.line + '</small></span></button>';
-      }).join('') + '</div></div>';
+      }).join('') + '</div>';
+    // 更换（不是第一次选）时要写原因，主理人会看到
+    if (m.guide && S.draftGuide !== m.guide) {
+      h += '<div class="qsub" style="margin:14px 0 6px;color:var(--ink3)">想更换的原因（主理人会看到，帮助我们做得更好）</div>' +
+        '<textarea id="f-reason" class="ta" rows="3" maxlength="300" placeholder="写一两句就好">' + esc(S.draftReason) + '</textarea>';
+    }
+    h += '</div>';
   }
   h += '<div class="form" style="margin-top:20px">' + msg() +
     '<button class="btn" data-act="profile"' + (S.busy ? ' disabled' : '') + '>' + (edit ? '保存' : '好了，出发') + '</button>' +
@@ -726,7 +736,7 @@ function openProfile(edit) {
   try { saved = localStorage.getItem('hlos_quiz_type') || ''; } catch (e) {}   // 主页测评存下的结果，用来帮她预先选好
   S.editProfile = edit; S.err = '';
   S.draftQuiz = m.quizType || (QUIZ_TYPES.some(function (q) { return q.v === saved; }) ? saved : '');
-  S.draftGuide = m.guide;
+  S.draftGuide = m.guide; S.draftReason = '';
   S.screen = 'profile'; render(); window.scrollTo(0, 0);
 }
 
@@ -751,7 +761,7 @@ function copyText(t) {
   });
 }
 
-var DRAFTS = { 'f-email': 'draftEmail', 'f-pw': 'draftPw', 'f-pw2': 'draftPw2', 'f-rcode': 'draftRcode', 'f-name': 'draftName', 'f-mood': 'draftMood', 'f-mail': 'draftMail' };
+var DRAFTS = { 'f-email': 'draftEmail', 'f-pw': 'draftPw', 'f-pw2': 'draftPw2', 'f-rcode': 'draftRcode', 'f-name': 'draftName', 'f-mood': 'draftMood', 'f-mail': 'draftMail', 'f-reason': 'draftReason' };
 document.addEventListener('input', function (e) { var k = DRAFTS[e.target.id]; if (k) S[k] = e.target.value; });
 document.addEventListener('keydown', function (e) {
   if (e.key !== 'Enter') return;
@@ -811,11 +821,12 @@ function handle(a, b) {
     case 'profile':
       if (!S.draftQuiz) { S.err = '请选择你的测评结果'; return render(); }
       if (!S.draftGuide) { S.err = '请选择一位星际领航员'; return render(); }
-      var first = !S.data.member.guide;
+      var first = !S.data.member.guide, change = !first && S.draftGuide !== S.data.member.guide;
+      if (change && !S.draftReason.trim()) { S.err = '请写一下想更换的原因'; return render(); }
       if (first && !confirm('确定选择 ' + S.draftGuide + ' 作为你的星际领航员吗？\n选定后 ' + GUIDE_MONTHS + ' 个月内不能更换。')) return;
-      if (!first && S.draftGuide !== S.data.member.guide && !confirm('确定把星际领航员换成 ' + S.draftGuide + ' 吗？\n换了之后 ' + GUIDE_MONTHS + ' 个月内不能再换。')) return;
-      return act('setProfile', { quizType: S.draftQuiz, guide: S.draftGuide }).then(function (d) {
-        setData(d); S.screen = d.member.planetName ? 'planet' : 'name'; render(); window.scrollTo(0, 0);
+      if (change && !confirm('确定把星际领航员换成 ' + S.draftGuide + ' 吗？\n换了之后 ' + GUIDE_MONTHS + ' 个月内不能再换。')) return;
+      return act('setProfile', { quizType: S.draftQuiz, guide: S.draftGuide, reason: change ? S.draftReason.trim() : '' }).then(function (d) {
+        setData(d); S.draftReason = ''; S.screen = d.member.planetName ? 'planet' : 'name'; render(); window.scrollTo(0, 0);
       }, function () {});
 
     case 'name':

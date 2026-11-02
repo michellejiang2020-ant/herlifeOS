@@ -59,7 +59,7 @@ var CONFIG = {
 var API = window.HLOS_API || CONFIG.API_BASE;
 var FOUNDERS = ['Michelle', 'Maggie', 'Moe'];
 
-var S = { pw: '', me: '', members: [], open: '', filter: 'todo', err: '', okMsg: '', busy: false, newCode: '', resetLink: '', draft: {} };
+var S = { pw: '', me: '', guideReason: '', allChanges: false, members: [], open: '', filter: 'todo', err: '', okMsg: '', busy: false, newCode: '', resetLink: '', draft: {} };
 try { S.pw = sessionStorage.getItem('hlos_f_pw') || ''; S.me = localStorage.getItem('hlos_f_me') || ''; } catch (e) {}
 // 这台设备的随机编号：密码输错的次数按设备记，别人乱试锁不住你的设备
 var DEV = Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
@@ -99,6 +99,38 @@ function statsBox() {
     '<div class="sub" style="margin:12px 0 6px">星际领航员</div><div class="row" style="gap:6px">' + chips(FOUNDERS, 'guide') + '</div></div>';
 }
 
+// 领航员更换（不含第一次选）：所有会员的记录，新的在前
+function guideChanges() {
+  var out = [];
+  S.members.forEach(function (m) {
+    (m.profileLog || []).forEach(function (x) { if (x.field === 'guide' && x.from) out.push({ m: m, x: x }); });
+  });
+  return out.sort(function (a, b) { return b.x.at - a.x.at; });
+}
+function whoLabel(m) { return (m.note || m.email) + (m.planetName ? ' ·「' + m.planetName + '」' : ''); }
+function changeLine(c) {
+  return '<div style="padding:8px 0;border-top:1px dashed var(--line)"><div class="mname" style="font-size:13px">' + esc(whoLabel(c.m)) + '：' + esc(c.x.from) + ' → ' + esc(c.x.to) + '</div>' +
+    '<div class="mmeta">' + when(c.x.at) + ' · ' + (c.x.by === 'member' ? '会员本人更换' : esc(c.x.by) + ' 在回信台更换') + '</div>' +
+    '<div class="mood" style="margin-top:2px">原因：' + esc(c.x.reason || '（没有写）') + '</div></div>';
+}
+// 列表页最上面：会员自己换了领航员、还没人点「知道了」的
+function guideAlertBox() {
+  var list = guideChanges().filter(function (c) { return c.x.by === 'member' && c.x.at > (c.m.guideAckAt || 0); });
+  if (!list.length) return '';
+  return '<div class="box" style="border-color:var(--warn)"><div class="mname" style="margin-bottom:4px">领航员更换提醒（' + list.length + '）</div>' +
+    '<div class="sub" style="margin:0 0 4px">这几位会员自己换了星际领航员。看过后点「知道了」，三位都不会再看到这条提醒。</div>' +
+    list.map(function (c) { return changeLine(c).replace(/<\/div>$/, '<div class="row" style="margin-top:6px"><button class="ghost" data-a="ackguide" data-c="' + esc(c.m.code) + '"' + (S.busy ? ' disabled' : '') + '>知道了</button></div></div>'); }).join('') + '</div>';
+}
+// 所有更换记录和原因（留着以后复盘）
+function guideHistoryBox() {
+  var list = guideChanges();
+  if (!list.length) return '';
+  var show = S.allChanges ? list : list.slice(0, 5);
+  return '<div class="box"><div class="mname" style="margin-bottom:4px">领航员更换记录（共 ' + list.length + ' 次）</div>' +
+    show.map(changeLine).join('') +
+    (list.length > 5 ? '<div class="row" style="margin-top:8px"><button class="ghost" data-a="allchanges">' + (S.allChanges ? '收起' : '查看全部') + '</button></div>' : '') + '</div>';
+}
+
 function unreplied(m) { return m.letters.filter(function (l) { return l.from === 'member' && !l.replied; }).length; }
 function lastAt(m) { return m.letters.length ? m.letters[m.letters.length - 1].createdAt : 0; }
 
@@ -125,6 +157,7 @@ function render() {
 
   h += '<div class="row" style="justify-content:space-between"><div><h1>主理人回信台</h1><div class="sub">' + esc(S.me) + '，你好 · 待回信 ' + todo + ' 位</div></div>' +
     '<div class="row"><button class="ghost" data-a="refresh">刷新</button><button class="ghost" data-a="switch">切换身份</button><button class="ghost" data-a="logout">退出</button></div></div>';
+  h += guideAlertBox();
   h += '<div class="box"><div class="row"><button class="ghost' + (S.filter === 'todo' ? ' on' : '') + '" data-a="filter" data-v="todo">待回信</button>' +
     '<button class="ghost' + (S.filter === 'all' ? ' on' : '') + '" data-a="filter" data-v="all">全部会员（' + S.members.length + '）</button></div>';
   if (!list.length) h += '<div class="sub" style="padding:16px 4px">' + (S.filter === 'todo' ? '现在没有待回的信。' : '还没有会员。') + '</div>';
@@ -137,7 +170,7 @@ function render() {
       (n ? '<span class="badge">' + n + ' 封待回</span>' : '<span class="badge done">' + (x.letters.length ? '已回复' : '') + '</span>') + '</button>';
   });
   h += '</div>';
-  h += statsBox();
+  h += statsBox() + guideHistoryBox();
 
   h += '<div class="box"><div class="mname" style="margin-bottom:10px">生成新的注册链接</div><div class="row">' +
     '<input id="note" placeholder="备注（例如：小美 / 第一批内测）" style="flex:1;min-width:180px">' +
@@ -203,7 +236,8 @@ function profileBox(m) {
     (m.guideSince && !byFounder ? '<span style="width:auto;margin-left:10px">她自己在 ' + esc(m.guideSince) + ' 选定</span>' : '') + '</div>';
   if (m.guide) {
     h += S.guideEdit
-      ? '<div class="row" style="margin-top:8px"><span class="sub" style="margin:0">改成：</span>' +
+      ? '<div class="row" style="margin-top:8px"><input id="greason" maxlength="300" placeholder="更换原因（必填，例如：她微信里说想多聊职业方向）" style="flex:1;min-width:240px" value="' + esc(S.guideReason) + '"></div>' +
+        '<div class="row" style="margin-top:8px"><span class="sub" style="margin:0">改成：</span>' +
         FOUNDERS.filter(function (f) { return f !== m.guide; }).map(function (f) {
           return '<button class="ghost" data-a="setguide" data-g="' + f + '"' + (S.busy ? ' disabled' : '') + '><span class="who" style="background:var(--c-' + f + ')"></span>' + f + '</button>';
         }).join('') + '<button class="ghost" data-a="guideedit">取消</button></div>'
@@ -214,7 +248,7 @@ function profileBox(m) {
       var what = x.field === 'quiz' ? '测评结果' : '星际领航员';
       var v = function (s) { return x.field === 'quiz' ? quizLabel(s) : s; };
       return '<div class="sub" style="margin:2px 0">' + when(x.at) + ' · ' + (x.by === 'member' ? '会员本人' : esc(x.by)) + ' · ' + what + '：' +
-        (x.from ? esc(v(x.from)) + ' → ' : '首次选择 ') + esc(v(x.to)) + '</div>';
+        (x.from ? esc(v(x.from)) + ' → ' : '首次选择 ') + esc(v(x.to)) + (x.reason ? '<br><span style="color:var(--ink3)">原因：' + esc(x.reason) + '</span>' : '') + '</div>';
     }).join('');
     if (byFounder && last.from && last.to === m.guide) {
       h += '<div class="row" style="margin-top:8px"><button class="ghost" data-a="setguide" data-g="' + esc(last.from) + '" data-undo="1"' + (S.busy ? ' disabled' : '') + '>撤销上一次修改，改回 ' + esc(last.from) + '</button></div>';
@@ -230,21 +264,33 @@ function load() {
     function (e) { S.busy = false; if (/密码/.test(e.message)) { S.pw = ''; try { sessionStorage.removeItem('hlos_f_pw'); } catch (x) {} } S.err = e.message; render(); });
 }
 
-document.addEventListener('input', function (e) { if (e.target.id === 'reply' && S.open) S.draft[S.open] = e.target.value; });
+document.addEventListener('input', function (e) {
+  if (e.target.id === 'reply' && S.open) S.draft[S.open] = e.target.value;
+  if (e.target.id === 'greason') S.guideReason = e.target.value;
+});
 document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id === 'pw') act('login'); });
 document.addEventListener('click', function (e) { var b = e.target.closest('[data-a]'); if (b && !b.disabled) act(b.getAttribute('data-a'), b); });
 
 function act(a, b) {
   if (a === 'showpw') { var p = document.getElementById('pw'), show = p.type === 'password'; p.type = show ? 'text' : 'password'; b.textContent = show ? '隐藏' : '显示'; return p.focus(); }
   S.okMsg = ''; S.extMsg = ''; S.guideMsg = '';
-  if (a === 'guideedit') { S.guideEdit = !S.guideEdit; return render(); }
-  if (a === 'setguide') {
-    var gm = S.members.filter(function (x) { return x.code === S.open; })[0], to = b.getAttribute('data-g');
-    var gwho = gm.planetName ? '「' + gm.planetName + '」' : (gm.note || gm.email);
-    if (!confirm((b.getAttribute('data-undo') ? '撤销上一次修改？\n\n' : '') + '确定把 ' + gwho + ' 的星际领航员从 ' + gm.guide + ' 改成 ' + to + ' 吗？\n\n请先确认会员本人同意。她下次打开星球就会看到新的领航员。')) return;
+  if (a === 'guideedit') { S.guideEdit = !S.guideEdit; S.guideReason = ''; return render(); }
+  if (a === 'allchanges') { S.allChanges = !S.allChanges; return render(); }
+  if (a === 'ackguide') {
     S.busy = true; render();
-    return call('f_setGuide', { code: S.open, guide: to, founder: S.me }).then(function (r) {
-      S.members = r.members; S.busy = false; S.err = ''; S.guideEdit = false; S.guideMsg = '已改成 ' + to + '，改动记录里写上了你的名字。'; render();
+    return call('f_ackGuide', { code: b.getAttribute('data-c'), founder: S.me }).then(function (r) {
+      S.members = r.members; S.busy = false; S.err = ''; render();
+    }, function (e) { S.busy = false; S.err = e.message; render(); });
+  }
+  if (a === 'setguide') {
+    var gm = S.members.filter(function (x) { return x.code === S.open; })[0], to = b.getAttribute('data-g'), undo = b.getAttribute('data-undo');
+    var reason = undo ? '撤销上一次修改' : S.guideReason.trim();
+    if (!reason) { S.err = '请先写一下更换的原因'; return render(); }
+    var gwho = gm.planetName ? '「' + gm.planetName + '」' : (gm.note || gm.email);
+    if (!confirm((undo ? '撤销上一次修改？\n\n' : '') + '确定把 ' + gwho + ' 的星际领航员从 ' + gm.guide + ' 改成 ' + to + ' 吗？\n\n请先确认会员本人同意。她下次打开星球就会看到新的领航员。')) return;
+    S.busy = true; render();
+    return call('f_setGuide', { code: S.open, guide: to, founder: S.me, reason: reason }).then(function (r) {
+      S.members = r.members; S.busy = false; S.err = ''; S.guideEdit = false; S.guideReason = ''; S.guideMsg = '已改成 ' + to + '，改动记录里写上了你的名字和原因。'; render();
     }, function (e) { S.busy = false; S.err = e.message; render(); });
   }
   if (a === 'login') {
