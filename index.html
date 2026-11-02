@@ -266,6 +266,8 @@
             this.calculateQuizScores();
             this.analysisResult = this.getFinalAnalysis();
             this.quizFinished = true;
+            // 存下结果：入会后第一次登录会员页时，用来帮她预先选好测评类型
+            try { localStorage.setItem('hlos_quiz_type', this.analysisResult.typeName); } catch (e) {}
         }
     },
     prevQuiz() {
@@ -1319,6 +1321,8 @@
                   <p class="eyebrow-line text-xs tracking-[0.25em] text-custom-accent uppercase font-semibold mb-3">Her Life OS · 人生系统觉察报告</p>
                   <h2 class="text-3xl sm:text-4xl font-serif text-custom-primary font-semibold" x-text="analysisResult.typeName"></h2>
                   <p class="text-sm sm:text-base text-custom-primary-light mt-4 leading-relaxed max-w-md mx-auto" x-text="analysisResult.summary"></p>
+                  <!-- 截图提醒（样式写在元素上：style.css 已精简过，新 class 可能不在里面） -->
+                  <p style="margin:20px auto 0;max-width:28rem;padding:10px 16px;border:1px solid rgba(197,168,128,.45);border-radius:14px;background:#FAF5EE;font-size:13px;line-height:1.8;color:#8A6D47">📸 请截图保存这份结果。加入会员后，第一次登录时会请你选出自己的测评类型。</p>
               </div>
 
               <!-- 维度分值可视化展示 -->

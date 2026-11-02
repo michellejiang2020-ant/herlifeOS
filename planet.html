@@ -115,6 +115,21 @@ video{display:block;width:100%;aspect-ratio:16/9;background:#000;border-radius:1
 .letter .txt{font-size:12.5px;color:var(--ink2);line-height:1.9;font-weight:300;margin-top:4px;white-space:pre-wrap;word-break:break-word}
 .letter.example{opacity:.6}
 
+/* 首次登录两题 */
+.qs{width:100%;max-width:340px;padding:0 18px;margin-top:26px}
+.qt{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--ink);line-height:1.8;margin-bottom:4px}
+.qsub{font-size:11.5px;color:var(--hint);font-weight:300;line-height:1.8;margin-bottom:12px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);border-radius:14px;background:var(--card);padding:11px 14px;min-height:44px;font-size:13.5px;color:var(--ink2);transition:border-color .2s,box-shadow .2s}
+.opt.on{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,126,159,.15);color:var(--ink)}
+.opt .dot{flex:none;width:16px;height:16px;border-radius:50%;border:1px solid var(--line2)}
+.opt.on .dot{border:5px solid var(--accent)}
+.opt img{flex:none;width:46px;height:46px;border-radius:50%;object-fit:cover}
+.opt b{display:block;font-weight:500;font-size:14px;color:var(--ink);letter-spacing:.04em}
+.opt small{display:block;font-size:11.5px;color:var(--ink3);font-weight:300;line-height:1.7;margin-top:2px}
+.guide{display:inline-flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--ink3);font-weight:300;position:relative;z-index:1}
+.guide img{width:22px;height:22px;border-radius:50%;object-fit:cover}
+
 .foot{margin-top:34px;text-align:center;padding:0 24px}
 .modal{position:fixed;inset:0;background:rgba(13,21,34,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
 .sheet{background:#fff;color:#253544;border-radius:18px;padding:22px;max-width:320px;width:100%;text-align:center}
@@ -182,6 +197,20 @@ var MILESTONES = [
 
 var DAILY = 3;   // 今日星情、星际信箱每天各 3 条（和云函数保持一致）
 
+// 首次登录的两题（选项和云函数 QUIZ_TYPES / FOUNDERS 保持一致）
+var QUIZ_TYPES = [
+  { v: '全面蓄力型' }, { v: '平衡生长型' }, { v: '责任承载型' }, { v: '生长探索型' }, { v: '安全筑基型' },
+  { v: '不记得', label: '没做过 / 不记得了' }
+];
+// 星际领航员的介绍（文案请主理人确认）
+var GUIDES = [
+  { name: 'Maggie', track: '内在系统', line: '陪你听见自己的声音，理顺情绪，和自己好好相处。' },
+  { name: 'Michelle', track: '路径系统', line: '陪你看清方向和节奏，在人生和事业的路口做选择。' },
+  { name: 'Moe', track: '安全系统', line: '陪你搭好生活的底座，让钱、健康和日子都更踏实。' }
+];
+function guideImg(name) { return 'images/planet/guide-' + name.toLowerCase() + '.jpg'; }
+var GUIDE_MONTHS = 3;   // 领航员选定后满 3 个月才能换（云函数也会检查）
+
 
 /* =========================================================
    数据层 HLOS_Store：页面只通过它读写数据
@@ -225,7 +254,8 @@ var HLOS_Store = (function () {
     while (month < dur && addMonths(start, month) <= t) month++;
     var st = { today: t, startDate: start, expiresAt: exp, day: days(start, t) + 1, month: month, daysLeft: Math.max(0, days(t, exp)), active: t < exp };
     var out = {
-      member: { code: d.code, email: d.email, planetName: d.planetName || '', kind: 'trial' },
+      member: { code: d.code, email: d.email, planetName: d.planetName || '', kind: 'trial', quizType: d.quizType || '', guide: d.guide || '',
+        guideCanChange: !d.guide || !d.guideSince || t >= addMonths(d.guideSince, GUIDE_MONTHS) },
       status: st,
       courses: st.active ? PREVIEW_COURSES.filter(function (c) { return c.month <= st.month; }) : [],
       nextMonthAt: st.active && month < dur ? addMonths(start, month) : '',
@@ -268,6 +298,13 @@ var HLOS_Store = (function () {
     if (action === 'me') return Promise.resolve(s);
     if (!s.status.active) return fail('会员期已结束，星球现在是只读状态');
     if (action === 'setName') { d.planetName = String(p.name).slice(0, 16); }
+    else if (action === 'setProfile') {
+      if (!p.quizType) return fail('请选择你的测评结果');
+      var g = p.guide || d.guide;
+      if (!g) return fail('请选择一位星际领航员');
+      if (g !== d.guide) { if (!s.member.guideCanChange) return fail('星际领航员满 ' + GUIDE_MONTHS + ' 个月才能更换'); d.guide = g; d.guideSince = s.status.today; }
+      d.quizType = p.quizType;
+    }
     else if (action === 'addEvent') {
       if (p.type === 'class') {
         if (d.events.some(function (e) { return e.type === 'class' && e.data.courseId === p.courseId; })) return Promise.resolve(s);
@@ -315,7 +352,8 @@ function isNightNow() { var h = new Date().getHours(); return h >= NIGHT_FROM ||
 var Q = (function () { var o = {}; location.search.replace(/[?&]([^=&]+)=([^&]*)/g, function (_, k, v) { o[k] = decodeURIComponent(v); }); return o; })();
 
 var S = {
-  screen: 'loading',      // loading | login | register | forgot | resetkey | name | grow | planet
+  screen: 'loading',      // loading | login | register | forgot | resetkey | profile | name | grow | planet
+  draftQuiz: '', draftGuide: '', editProfile: false,   // profile：首次登录两题；editProfile = 从星球页进来修改
   shown: '',              // 上一次画出来的画面（只有换画面时才播放淡入动画）
   data: null,
   err: '', ok: '', busy: false,
@@ -461,6 +499,31 @@ function viewResetKey() {
     '</div>';
 }
 
+// 首次登录两题；从星球页进来修改时，领航员满 3 个月才出现（不主动提示可以更换）
+function viewProfile() {
+  var m = S.data.member, edit = S.editProfile, showGuide = !edit || m.guideCanChange;
+  var h = '<div class="wrap">' + topBar(false) + previewBanner() +
+    (edit ? title('修改我的测评结果', '如果当时选错了，可以在这里改过来。')
+      : title('先认识一下你', '在出发之前，回答两个小问题。<br>这会帮助我们更好地陪伴你。'));
+  h += '<div class="qs"><div class="qt">' + (edit ? '' : '1. ') + '你在主页做的「人生系统测评」，结果是哪一型？</div>' +
+    '<div class="qsub">可以翻翻测评时保存的截图</div><div class="opts">' +
+    QUIZ_TYPES.map(function (q) {
+      return '<button class="opt' + (S.draftQuiz === q.v ? ' on' : '') + '" data-act="pickquiz" data-v="' + q.v + '"><span class="dot"></span>' + esc(q.label || q.v) + '</button>';
+    }).join('') + '</div></div>';
+  if (showGuide) {
+    h += '<div class="qs"><div class="qt">' + (edit ? '' : '2. ') + '这一年，你希望哪位星际领航员陪你同行？</div>' +
+      '<div class="qsub">三位都会陪着你，这一位会更多地留意你的成长。<br>选定后 ' + GUIDE_MONTHS + ' 个月内不能更换，好让你们慢慢熟悉彼此。</div><div class="opts">' +
+      GUIDES.map(function (g) {
+        return '<button class="opt' + (S.draftGuide === g.name ? ' on' : '') + '" data-act="pickguide" data-v="' + g.name + '"><img src="' + guideImg(g.name) + '" alt="">' +
+          '<span><b>' + g.name + ' · ' + g.track + '</b><small>' + g.line + '</small></span></button>';
+      }).join('') + '</div></div>';
+  }
+  h += '<div class="form" style="margin-top:20px">' + msg() +
+    '<button class="btn" data-act="profile"' + (S.busy ? ' disabled' : '') + '>' + (edit ? '保存' : '好了，出发') + '</button>' +
+    (edit ? '<button class="link" data-act="profilecancel">← 返回星球</button>' : '') + '</div>';
+  return h + '</div>';
+}
+
 function viewName() {
   return '<div class="wrap">' + topBar(false) + previewBanner() +
     '<div class="serif" style="font-size:27px;line-height:1.9;color:var(--ink);font-weight:500;text-align:center;margin-top:34px">一颗星球，<br>等一个名字。</div>' +
@@ -489,6 +552,7 @@ function viewPlanet() {
   h += '<div style="display:flex;align-items:baseline;gap:14px;margin-top:10px;position:relative;z-index:1">' +
     '<div style="font-size:12px;color:var(--ink3);font-weight:300">' + (ro ? '已陪你走过一段路' : '第 ' + st.day + ' 天' + (S.night ? ' · 夜' : '')) + '</div>' +
     (ro ? '' : '<button style="font-size:12px;color:var(--ink2);font-weight:300;border-bottom:1px dashed var(--line2);padding-bottom:1px" data-act="weather">今天：' + WEATHER[S.w] + ' ↻</button>') + '</div>';
+  if (d.member.guide) h += '<div class="guide"><img src="' + guideImg(d.member.guide) + '" alt="">你的星际领航员：' + esc(d.member.guide) + ' ✦</div>';
   h += '<div style="position:relative;z-index:1">' + planetHTML(els) + '</div>';
   h += sel
     ? '<div style="text-align:center;max-width:290px;animation:fadeup .5s ease both;position:relative;z-index:1"><div class="serif" style="font-size:12px;letter-spacing:.15em;color:var(--accent)">第 ' + sel.day + ' 天</div><div style="font-size:12px;color:var(--ink2);line-height:1.9;margin-top:4px;font-weight:300">' + esc(sel.story) + '</div></div>'
@@ -511,7 +575,9 @@ function viewPlanet() {
       (S.tab === i ? '<div class="mbody' + (S.tabAnim ? ' anim' : '') + '">' + m.body(d, ro) + '</div>' : '') + '</div>';
   });
   h += '</div>';
-  h += '<div class="foot"><div class="hint">' + esc(d.member.email) + '</div><button class="link" style="margin-top:6px" data-act="logout">退出登录</button></div>';
+  h += '<div class="foot"><div class="hint">' + esc(d.member.email) + '</div><div class="links" style="margin-top:6px">' +
+    (ro ? '' : '<button class="link" data-act="profileedit">修改我的测评结果</button>') +
+    '<button class="link" data-act="logout">退出登录</button></div></div>';
   if (S.pdfUrl) h += pdfSheet();
   return h + '</div>';
 }
@@ -627,7 +693,7 @@ function render() {
   document.body.classList.toggle('night', S.screen === 'planet' && S.night);
   var v = { loading: function () { return '<div class="wrap"><div class="hint" style="margin-top:40vh">正在打开星球…</div></div>'; },
     login: viewLogin, register: viewRegister, forgot: viewForgot, resetkey: viewResetKey,
-    name: viewName, grow: viewGrow, planet: viewPlanet }[S.screen];
+    profile: viewProfile, name: viewName, grow: viewGrow, planet: viewPlanet }[S.screen];
   app.innerHTML = v();
   if (S.screen !== S.shown && app.firstChild) app.firstChild.classList.add('fade');   // 只有换画面时才淡入
   S.shown = S.screen; S.tabAnim = false;
@@ -649,8 +715,19 @@ function setData(d) {
 function go(d) {
   setData(d);
   S.draftPw = ''; S.draftPw2 = ''; S.draftRcode = ''; S.showPw = false; S.ok = '';
+  // 还没答两题的会员（包括老会员）先答题；会员期已结束的不打扰
+  if ((!d.member.quizType || !d.member.guide) && d.status.active) return openProfile(false);
   S.screen = d.member.planetName ? 'planet' : 'name';
   render();
+}
+
+function openProfile(edit) {
+  var m = S.data.member, saved = '';
+  try { saved = localStorage.getItem('hlos_quiz_type') || ''; } catch (e) {}   // 主页测评存下的结果，用来帮她预先选好
+  S.editProfile = edit; S.err = '';
+  S.draftQuiz = m.quizType || (QUIZ_TYPES.some(function (q) { return q.v === saved; }) ? saved : '');
+  S.draftGuide = m.guide;
+  S.screen = 'profile'; render(); window.scrollTo(0, 0);
 }
 
 function act(action, payload) {
@@ -659,7 +736,7 @@ function act(action, payload) {
     S.busy = false; return d;
   }, function (e) {
     S.busy = false; S.err = e.message;
-    if (e.status === 401 && ['planet', 'name', 'grow'].indexOf(S.screen) >= 0) { HLOS_Store.token = ''; S.screen = 'login'; }
+    if (e.status === 401 && ['planet', 'profile', 'name', 'grow'].indexOf(S.screen) >= 0) { HLOS_Store.token = ''; S.screen = 'login'; }
     render(); throw e;
   });
 }
@@ -726,6 +803,20 @@ function handle(a, b) {
     case 'resetkey':
       if (newPwError()) { S.err = newPwError(); return render(); }
       return act('resetByKey', { key: S.resetKey, password: S.draftPw }).then(function (d) { cleanUrl(); go(d); }, function () {});
+
+    case 'pickquiz': S.draftQuiz = b.getAttribute('data-v'); S.err = ''; return render();
+    case 'pickguide': S.draftGuide = b.getAttribute('data-v'); S.err = ''; return render();
+    case 'profileedit': return openProfile(true);
+    case 'profilecancel': S.screen = 'planet'; S.err = ''; render(); return window.scrollTo(0, 0);
+    case 'profile':
+      if (!S.draftQuiz) { S.err = '请选择你的测评结果'; return render(); }
+      if (!S.draftGuide) { S.err = '请选择一位星际领航员'; return render(); }
+      var first = !S.data.member.guide;
+      if (first && !confirm('确定选择 ' + S.draftGuide + ' 作为你的星际领航员吗？\n选定后 ' + GUIDE_MONTHS + ' 个月内不能更换。')) return;
+      if (!first && S.draftGuide !== S.data.member.guide && !confirm('确定把星际领航员换成 ' + S.draftGuide + ' 吗？\n换了之后 ' + GUIDE_MONTHS + ' 个月内不能再换。')) return;
+      return act('setProfile', { quizType: S.draftQuiz, guide: S.draftGuide }).then(function (d) {
+        setData(d); S.screen = d.member.planetName ? 'planet' : 'name'; render(); window.scrollTo(0, 0);
+      }, function () {});
 
     case 'name':
       var n = S.draftName.trim();

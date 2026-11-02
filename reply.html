@@ -41,6 +41,11 @@ textarea{width:100%;resize:vertical;min-height:110px;line-height:1.8}
 .code{font-family:ui-monospace,Menlo,monospace;font-size:18px;letter-spacing:.08em;color:var(--ink);background:#F3F7FA;border-radius:8px;padding:6px 12px}
 .who{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
 .back{font-size:12px;color:var(--accent)}
+.chip{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:#F7FAFC}
+.chip b{color:var(--ink);font-weight:600;margin-left:2px}
+.chip.dim{color:var(--hint)}
+.kv{font-size:13.5px;color:var(--ink);line-height:2}
+.kv .k{display:inline-block;width:92px;font-size:12px;color:var(--hint)}
 @media (max-width:520px){.letter{margin-right:24px}.letter.f{margin-left:24px}}
 </style>
 </head>
@@ -76,6 +81,24 @@ function linkBox(url) {
     '<button class="ghost" data-a="copy" data-t="' + esc(url) + '">复制</button></div>';
 }
 
+// 首次登录两题（和云函数 QUIZ_TYPES 一致）
+var QUIZ_TYPES = ['全面蓄力型', '平衡生长型', '责任承载型', '生长探索型', '安全筑基型', '不记得'];
+function quizLabel(v) { return v === '不记得' ? '没做过 / 不记得' : v; }
+
+// 统计：已注册的会员里，各测评类型、各星际领航员有几位
+function statsBox() {
+  var ms = S.members.filter(function (x) { return x.email; });
+  if (!ms.length) return '';
+  function count(k, v) { return ms.filter(function (x) { return x[k] === v; }).length; }
+  function chips(list, k, label) {
+    return list.map(function (v) { return '<span class="chip">' + esc(label ? label(v) : v) + ' <b>' + count(k, v) + '</b></span>'; }).join('') +
+      (count(k, '') ? '<span class="chip dim">还没答 <b>' + count(k, '') + '</b></span>' : '');
+  }
+  return '<div class="box"><div class="mname" style="margin-bottom:10px">会员统计（已注册 ' + ms.length + ' 位）</div>' +
+    '<div class="sub" style="margin:0 0 6px">测评结果</div><div class="row" style="gap:6px">' + chips(QUIZ_TYPES, 'quizType', quizLabel) + '</div>' +
+    '<div class="sub" style="margin:12px 0 6px">星际领航员</div><div class="row" style="gap:6px">' + chips(FOUNDERS, 'guide') + '</div></div>';
+}
+
 function unreplied(m) { return m.letters.filter(function (l) { return l.from === 'member' && !l.replied; }).length; }
 function lastAt(m) { return m.letters.length ? m.letters[m.letters.length - 1].createdAt : 0; }
 
@@ -109,10 +132,12 @@ function render() {
     var n = unreplied(x), st = x.status;
     h += '<button class="member" data-a="open" data-c="' + esc(x.code) + '"><div><div class="mname">' + esc(x.note || '（未备注）') + (x.planetName ? ' · 「' + esc(x.planetName) + '」' : '') + '</div>' +
       '<div class="mmeta">' + (x.email ? esc(x.email) : esc(x.code) + ' · 未注册') + ' · ' + (x.kind === 'trial' ? '内测' : '会员') + ' · ' +
-      (st ? (st.active ? '第 ' + st.day + ' 天，至 ' + st.expiresAt : '已于 ' + st.expiresAt + ' 到期') : '尚未进入星球') + '</div></div>' +
+      (st ? (st.active ? '第 ' + st.day + ' 天，至 ' + st.expiresAt : '已于 ' + st.expiresAt + ' 到期') : '尚未进入星球') +
+      (x.guide ? ' · 领航员 ' + esc(x.guide) : '') + '</div></div>' +
       (n ? '<span class="badge">' + n + ' 封待回</span>' : '<span class="badge done">' + (x.letters.length ? '已回复' : '') + '</span>') + '</button>';
   });
   h += '</div>';
+  h += statsBox();
 
   h += '<div class="box"><div class="mname" style="margin-bottom:10px">生成新的注册链接</div><div class="row">' +
     '<input id="note" placeholder="备注（例如：小美 / 第一批内测）" style="flex:1;min-width:180px">' +
@@ -146,6 +171,7 @@ function renderMember(m) {
     (m.renewals && m.renewals.length ? m.renewals.map(function (x) {
       return '<div class="sub">' + when(x.at) + ' · ' + (x.by ? esc(x.by) + ' ' : '') + '续了 ' + x.months + ' 个月' + (x.to ? '，到期日 ' + esc(x.from) + ' → ' + esc(x.to) : '（当时尚未注册）') + '</div>';
     }).join('') : '') + (S.extMsg ? '<div class="ok">' + esc(S.extMsg) + '</div>' : '') + '</div>';
+  if (m.email) h += profileBox(m);
   if (m.moods.length) {
     h += '<div class="box"><div class="sub" style="margin:0 0 8px">最近的今日星情（供回信时参考）</div>' +
       m.moods.map(function (x) { return '<div class="mood">第 ' + x.day + ' 天 ·「' + esc(x.card) + '」' + esc(x.text) + '</div>'; }).join('') + '</div>';
@@ -167,6 +193,37 @@ function renderMember(m) {
   document.getElementById('app').innerHTML = h;
 }
 
+// 测评结果和星际领航员：回信台只能改领航员，要先点「修改」再确认；每次改动都有记录，回信台改的可以一键改回
+function profileBox(m) {
+  var log = m.profileLog || [];
+  var last = log.filter(function (x) { return x.field === 'guide'; }).pop();
+  var byFounder = last && last.by !== 'member';
+  var h = '<div class="box"><div class="kv"><span class="k">测评结果</span>' + (m.quizType ? esc(quizLabel(m.quizType)) : '<i style="color:var(--hint)">还没答</i>') + '</div>' +
+    '<div class="kv"><span class="k">星际领航员</span>' + (m.guide ? '<span class="who" style="background:var(--c-' + esc(m.guide) + ')"></span>' + esc(m.guide) : '<i style="color:var(--hint)">还没选</i>') +
+    (m.guideSince && !byFounder ? '<span style="width:auto;margin-left:10px">她自己在 ' + esc(m.guideSince) + ' 选定</span>' : '') + '</div>';
+  if (m.guide) {
+    h += S.guideEdit
+      ? '<div class="row" style="margin-top:8px"><span class="sub" style="margin:0">改成：</span>' +
+        FOUNDERS.filter(function (f) { return f !== m.guide; }).map(function (f) {
+          return '<button class="ghost" data-a="setguide" data-g="' + f + '"' + (S.busy ? ' disabled' : '') + '><span class="who" style="background:var(--c-' + f + ')"></span>' + f + '</button>';
+        }).join('') + '<button class="ghost" data-a="guideedit">取消</button></div>'
+      : '<div class="row" style="margin-top:8px"><button class="ghost" data-a="guideedit">修改领航员</button></div>';
+  }
+  if (log.length) {
+    h += '<div class="sub" style="margin:12px 0 4px">改动记录</div>' + log.slice().reverse().map(function (x) {
+      var what = x.field === 'quiz' ? '测评结果' : '星际领航员';
+      var v = function (s) { return x.field === 'quiz' ? quizLabel(s) : s; };
+      return '<div class="sub" style="margin:2px 0">' + when(x.at) + ' · ' + (x.by === 'member' ? '会员本人' : esc(x.by)) + ' · ' + what + '：' +
+        (x.from ? esc(v(x.from)) + ' → ' : '首次选择 ') + esc(v(x.to)) + '</div>';
+    }).join('');
+    if (byFounder && last.from && last.to === m.guide) {
+      h += '<div class="row" style="margin-top:8px"><button class="ghost" data-a="setguide" data-g="' + esc(last.from) + '" data-undo="1"' + (S.busy ? ' disabled' : '') + '>撤销上一次修改，改回 ' + esc(last.from) + '</button></div>';
+    }
+  }
+  if (S.guideMsg) h += '<div class="ok">' + esc(S.guideMsg) + '</div>';
+  return h + '</div>';
+}
+
 function load() {
   S.busy = true;
   return call('f_list').then(function (r) { S.members = r.members; S.busy = false; S.err = ''; render(); },
@@ -179,7 +236,17 @@ document.addEventListener('click', function (e) { var b = e.target.closest('[dat
 
 function act(a, b) {
   if (a === 'showpw') { var p = document.getElementById('pw'), show = p.type === 'password'; p.type = show ? 'text' : 'password'; b.textContent = show ? '隐藏' : '显示'; return p.focus(); }
-  S.okMsg = ''; S.extMsg = '';
+  S.okMsg = ''; S.extMsg = ''; S.guideMsg = '';
+  if (a === 'guideedit') { S.guideEdit = !S.guideEdit; return render(); }
+  if (a === 'setguide') {
+    var gm = S.members.filter(function (x) { return x.code === S.open; })[0], to = b.getAttribute('data-g');
+    var gwho = gm.planetName ? '「' + gm.planetName + '」' : (gm.note || gm.email);
+    if (!confirm((b.getAttribute('data-undo') ? '撤销上一次修改？\n\n' : '') + '确定把 ' + gwho + ' 的星际领航员从 ' + gm.guide + ' 改成 ' + to + ' 吗？\n\n请先确认会员本人同意。她下次打开星球就会看到新的领航员。')) return;
+    S.busy = true; render();
+    return call('f_setGuide', { code: S.open, guide: to, founder: S.me }).then(function (r) {
+      S.members = r.members; S.busy = false; S.err = ''; S.guideEdit = false; S.guideMsg = '已改成 ' + to + '，改动记录里写上了你的名字。'; render();
+    }, function (e) { S.busy = false; S.err = e.message; render(); });
+  }
   if (a === 'login') {
     S.pw = document.getElementById('pw').value;
     return call('f_login').then(function () { try { sessionStorage.setItem('hlos_f_pw', S.pw); } catch (x) {} S.err = ''; render(); if (S.me) load(); },
@@ -190,8 +257,8 @@ function act(a, b) {
   if (a === 'logout') { S.pw = ''; S.members = []; try { sessionStorage.removeItem('hlos_f_pw'); } catch (x) {} return render(); }
   if (a === 'refresh') return load();
   if (a === 'filter') { S.filter = b.getAttribute('data-v'); return render(); }
-  if (a === 'open') { S.open = b.getAttribute('data-c'); S.err = ''; S.resetLink = ''; render(); return window.scrollTo(0, 0); }
-  if (a === 'close') { S.open = ''; S.err = ''; S.resetLink = ''; return render(); }
+  if (a === 'open') { S.open = b.getAttribute('data-c'); S.err = ''; S.resetLink = ''; S.guideEdit = false; render(); return window.scrollTo(0, 0); }
+  if (a === 'close') { S.open = ''; S.err = ''; S.resetLink = ''; S.guideEdit = false; return render(); }
   if (a === 'resetlink') {
     S.busy = true; render();
     return call('f_resetLink', { code: S.open }).then(function (r) {
