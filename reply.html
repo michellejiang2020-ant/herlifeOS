@@ -56,12 +56,15 @@ var FOUNDERS = ['Michelle', 'Maggie', 'Moe'];
 
 var S = { pw: '', me: '', members: [], open: '', filter: 'todo', err: '', okMsg: '', busy: false, newCode: '', resetLink: '', draft: {} };
 try { S.pw = sessionStorage.getItem('hlos_f_pw') || ''; S.me = localStorage.getItem('hlos_f_me') || ''; } catch (e) {}
+// 这台设备的随机编号：密码输错的次数按设备记，别人乱试锁不住你的设备
+var DEV = Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
+try { DEV = localStorage.getItem('hlos_f_dev') || (localStorage.setItem('hlos_f_dev', DEV), DEV); } catch (e) {}
 
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function when(t) { var d = new Date(t); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
 function call(action, p) {
   if (!API) return Promise.reject(new Error('还没有填写云函数地址（CONFIG.API_BASE）'));
-  return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action: action, pw: S.pw }, p || {})) })
+  return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action: action, pw: S.pw, dev: DEV }, p || {})) })
     .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(j.error || '请求失败'); return j; }); },
       function () { throw new Error('网络有点不稳定，请稍后再试'); });
 }
