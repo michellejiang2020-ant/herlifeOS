@@ -80,7 +80,7 @@ function render() {
   var h = '';
   if (!S.pw) {
     h = '<h1>主理人回信台</h1><div class="sub">只给 Michelle、Maggie、Moe 使用</div>' +
-      '<div class="box"><div class="row"><input id="pw" type="password" placeholder="输入回信台密码" autocomplete="current-password"><button class="btn" data-a="login">进入</button></div>' +
+      '<div class="box"><div class="row"><input id="pw" type="password" placeholder="输入回信台密码" autocomplete="current-password"><button class="ghost" data-a="showpw">显示</button><button class="btn" data-a="login">进入</button></div>' +
       (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '') + '</div>';
     return document.getElementById('app').innerHTML = h;
   }
@@ -175,6 +175,7 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.t
 document.addEventListener('click', function (e) { var b = e.target.closest('[data-a]'); if (b && !b.disabled) act(b.getAttribute('data-a'), b); });
 
 function act(a, b) {
+  if (a === 'showpw') { var p = document.getElementById('pw'), show = p.type === 'password'; p.type = show ? 'text' : 'password'; b.textContent = show ? '隐藏' : '显示'; return p.focus(); }
   S.okMsg = ''; S.extMsg = '';
   if (a === 'login') {
     S.pw = document.getElementById('pw').value;
