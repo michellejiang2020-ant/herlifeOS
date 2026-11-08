@@ -270,7 +270,7 @@ var HLOS_Store = (function () {
   function preview(action, p) {
     var d = db();
     if (action === 'checkCode') {
-      if (!/^HLOS-/i.test(p.code || '')) return fail('这个注册链接不对，请找主理人确认一下');
+      if (!/^HLOS-/i.test(p.code || '')) return fail('这个注册链接不对，请找星际领航员确认一下');
       if (d.code && d.code === p.code.toUpperCase()) return fail('这个注册链接已经用过了，请直接用邮箱登录');
       return Promise.resolve({ ok: true });
     }
@@ -290,7 +290,7 @@ var HLOS_Store = (function () {
       if (p.password.length < 8) return fail('密码至少 8 位');
       d.pw = p.password; d.resetCode = ''; save(d); return Promise.resolve(state(d, true));
     }
-    if (action === 'checkResetKey') return d.email ? Promise.resolve({ email: d.email }) : fail('这个重设链接已失效，请找主理人重新生成');
+    if (action === 'checkResetKey') return d.email ? Promise.resolve({ email: d.email }) : fail('这个重设链接已失效，请找星际领航员重新生成');
     if (action === 'resetByKey') { if (p.password.length < 8) return fail('密码至少 8 位'); d.pw = p.password; save(d); return Promise.resolve(state(d, true)); }
     if (action === 'logout') return Promise.resolve({ ok: true });
     if (!d.code || p.token !== 'preview') return fail('登录已过期，请重新登录');
@@ -324,7 +324,7 @@ var HLOS_Store = (function () {
       d.letters.push({ from: 'member', text: p.text, day: s.status.day, date: s.status.today, createdAt: Date.now() });
     }
     else if (action === 'previewReply') {
-      d.letters.push({ from: 'Maggie', text: '收到你的信了。（这是预览模式里的模拟回信，正式版由三位主理人亲自回复。）', day: s.status.day, date: s.status.today, createdAt: Date.now() });
+      d.letters.push({ from: 'Maggie', text: '收到你的信了。（这是预览模式里的模拟回信，正式版由三位星际领航员亲自回复。）', day: s.status.day, date: s.status.today, createdAt: Date.now() });
     }
     else if (action === 'getPdf') { return Promise.resolve({ url: 'images/wechat-qr.png' }); }
     save(d); return Promise.resolve(state(d));
@@ -430,7 +430,7 @@ function topBar(withToggle) {
 }
 function previewBanner(extra) {
   return HLOS_Store.mode === 'preview'
-    ? '<div class="banner">预览模式：数据只保存在这台设备上，信件不会送达主理人。' + (extra || '<br>网址后加 <b>?day=40</b> 可以模拟第 40 天。') + '</div>' : '';
+    ? '<div class="banner">预览模式：数据只保存在这台设备上，信件不会送达星际领航员。' + (extra || '<br>网址后加 <b>?day=40</b> 可以模拟第 40 天。') + '</div>' : '';
 }
 function msg() {
   return S.err ? '<div class="err">' + esc(S.err) + '</div>' : (S.ok ? '<div class="okmsg">' + esc(S.ok) + '</div>' : '');
@@ -463,7 +463,7 @@ function viewLogin() {
     '<div class="form">' + emailInput() + pwInput('密码', false) + msg() +
     '<button class="btn" style="margin-top:12px" data-act="login"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? '正在寻找星球…' : '进入星球') + '</button></div>' +
     '<div class="links"><button class="link" data-act="toforgot">忘记密码？</button></div>' +
-    '<div class="hint" style="text-align:center;margin-top:26px;padding:0 32px">还没有账号？入会后，主理人会把你专属的注册链接发给你。</div>' +
+    '<div class="hint" style="text-align:center;margin-top:26px;padding:0 32px">还没有账号？入会后，星际领航员会把你专属的注册链接发给你。</div>' +
     '</div>';
 }
 
@@ -491,7 +491,7 @@ function viewForgot() {
       '<div class="links"><button class="link" data-act="sendcode">重新发送验证码</button></div>';
   }
   h += '<div class="links"><button class="link" data-act="tologin">← 返回登录</button></div>' +
-    '<div class="hint" style="text-align:center;margin-top:22px;padding:0 32px">邮箱也收不到的话，可以在微信上告诉主理人，她会帮你重设。</div>';
+    '<div class="hint" style="text-align:center;margin-top:22px;padding:0 32px">邮箱也收不到的话，可以在微信上告诉星际领航员，她会帮你重设。</div>';
   return h + '</div>';
 }
 
@@ -523,7 +523,7 @@ function viewProfile() {
       }).join('') + '</div>';
     // 更换（不是第一次选）时要写原因，主理人会看到
     if (m.guide && S.draftGuide !== m.guide) {
-      h += '<div class="qsub" style="margin:14px 0 6px;color:var(--ink3)">想更换的原因（主理人会看到，帮助我们做得更好）</div>' +
+      h += '<div class="qsub" style="margin:14px 0 6px;color:var(--ink3)">想更换的原因（星际领航员会看到，帮助我们做得更好）</div>' +
         '<textarea id="f-reason" class="ta" rows="3" maxlength="300" placeholder="写一两句就好">' + esc(S.draftReason) + '</textarea>';
     }
     h += '</div>';
@@ -575,8 +575,8 @@ function viewPlanet() {
 
   // 三个模块
   var mods = [
-    { num: '01', name: '星光课堂', en: 'STAR CLASS', body: classBody },
-    { num: '02', name: '今日星情', en: 'TODAY MOOD', body: moodBody },
+    { num: '01', name: '星光课堂', en: 'STARLIGHT CLASS', body: classBody },
+    { num: '02', name: '今日星情', en: 'TODAY’S MOOD', body: moodBody },
     { num: '03', name: '星际信箱', en: 'STAR MAIL', body: mailBody }
   ];
   h += '<div class="mods" style="position:relative;z-index:1"><h3 class="brush">' + (ro ? '你的星球记录' : '今天，你可以') + '</h3>';
@@ -607,7 +607,7 @@ function classBody(d, ro) {
   if (ro) return '<p class="desc">会员期结束后，星光课堂暂时关闭。续费后可以继续收听。</p>';
   var done = {};
   d.events.forEach(function (e) { if (e.type === 'class') done[e.data.courseId] = true; });
-  var h = '<p class="desc">听主理人准备的音频与视频，完成一个小小的练习——这是往内输入。每一次学习，星球上都会长出新的绿。</p>';
+  var h = '<p class="desc">听星际领航员准备的音频与视频，完成一个小小的练习——这是往内输入。每一次学习，星球上都会长出新的绿。</p>';
   var months = {};
   d.courses.forEach(function (c) { (months[c.month] = months[c.month] || []).push(c); });
   Object.keys(months).sort(function (a, b) { return b - a; }).forEach(function (m) {
@@ -669,7 +669,7 @@ function moodBody(d, ro) {
 }
 
 function mailBody(d, ro) {
-  var h = '<p class="desc">与三位主理人双向通信。她们，是你星球上唯一的来访者。</p>';
+  var h = '<p class="desc">与三位星际领航员双向通信。她们，是你星球上唯一的来访者。</p>';
   if (!d.letters.length) {
     h += '<div class="hint" style="margin-bottom:6px">示例</div>' +
       '<div class="letter example"><div class="meta">第 3 天 · 你寄出</div><div class="txt">「最近总觉得自己走得太慢了……」</div></div>' +
@@ -681,12 +681,12 @@ function mailBody(d, ro) {
   });
   if (ro) return h + '<div class="locked">会员期结束后，信箱暂时关闭。</div>';
   var left = d.mailLeftToday;
-  h += '<textarea id="f-mail" class="ta" style="height:90px;margin-top:6px" maxlength="1000" placeholder="写一封给主理人的信……"' + (left <= 0 ? ' disabled' : '') + '>' + esc(S.draftMail) + '</textarea>' +
+  h += '<textarea id="f-mail" class="ta" style="height:90px;margin-top:6px" maxlength="1000" placeholder="写一封给星际领航员的信……"' + (left <= 0 ? ' disabled' : '') + '>' + esc(S.draftMail) + '</textarea>' +
     (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '') +
     '<div style="display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap"><button class="btn sm" data-act="mail"' + (left <= 0 || S.busy ? ' disabled' : '') + '>寄出 ✉</button>' +
-    '<span class="hint">' + (S.mailSent ? '信已寄出，主理人会在 1–3 天内回信' : (left > 0 ? '今天还可以寄 ' + left + ' 封' : '今天的 ' + DAILY + ' 封信都寄出了，明天再写吧')) + '</span></div>';
+    '<span class="hint">' + (S.mailSent ? '信已寄出，星际领航员会在 1–3 天内回信' : (left > 0 ? '今天还可以寄 ' + left + ' 封' : '今天的 ' + DAILY + ' 封信都寄出了，明天再写吧')) + '</span></div>';
   if (HLOS_Store.mode === 'preview' && d.letters.some(function (l) { return l.from === 'member'; }))
-    h += '<div style="margin-top:12px"><button class="link" data-act="fakereply">（预览用）模拟一封主理人回信</button></div>';
+    h += '<div style="margin-top:12px"><button class="link" data-act="fakereply">（预览用）模拟一封星际领航员回信</button></div>';
   return h;
 }
 
