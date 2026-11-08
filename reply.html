@@ -164,7 +164,7 @@ function render() {
   list.forEach(function (x) {
     var n = unreplied(x), st = x.status;
     h += '<button class="member" data-a="open" data-c="' + esc(x.code) + '"><div><div class="mname">' + esc(x.note || '（未备注）') + (x.planetName ? ' · 「' + esc(x.planetName) + '」' : '') + '</div>' +
-      '<div class="mmeta">' + (x.email ? esc(x.email) : esc(x.code) + ' · 未注册') + ' · ' + (x.kind === 'trial' ? '内测' : '会员') + ' · ' +
+      '<div class="mmeta">' + (x.email ? esc(x.email) : esc(x.code) + ' · 未注册') + ' · ' + (x.kind === 'trial' ? (st && st.trialExtended ? '内测（延期中）' : '内测') : '会员') + ' · ' +
       (st ? (st.active ? '第 ' + st.day + ' 天，至 ' + st.expiresAt : '已于 ' + st.expiresAt + ' 到期') : '尚未进入星球') +
       (x.guide ? ' · 领航员 ' + esc(x.guide) : '') + '</div></div>' +
       (n ? '<span class="badge">' + n + ' 封待回</span>' : '<span class="badge done">' + (x.letters.length ? '已回复' : '') + '</span>') + '</button>';
@@ -314,7 +314,7 @@ function act(a, b) {
   if (a === 'extend') {
     var em = S.members.filter(function (x) { return x.code === S.open; })[0], months = +b.getAttribute('data-m');
     var est = em.status, who = em.note || em.email || em.code;
-    var msg = est ? '给「' + who + '」续 ' + months + ' 个月？\n\n' + (est.active ? '会员期会从 ' + est.expiresAt + ' 再往后延 ' + months + ' 个月。' : '她已于 ' + est.expiresAt + ' 到期，会从今天起重新算 ' + months + ' 个月。')
+    var msg = est ? '给「' + who + '」续 ' + months + ' 个月？\n\n' + (est.trialExtended && est.active ? '她的内测 1 个月已满（现在是延期，到 ' + est.expiresAt + '），会从今天起算 ' + months + ' 个月，课程从第 2 个月接着开。' : est.active ? '会员期会从 ' + est.expiresAt + ' 再往后延 ' + months + ' 个月。' : '她已于 ' + est.expiresAt + ' 到期，会从今天起重新算 ' + months + ' 个月。')
       : '给「' + who + '」加 ' + months + ' 个月？她注册后会员期一共 ' + ((em.durationMonths || 12) + months) + ' 个月。';
     if (!confirm(msg + '\n\n请确认已经收到款项。点一次就加一次，不要重复点。')) return;
     S.busy = true; render();
