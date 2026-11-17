@@ -96,6 +96,7 @@ body.night .stars{display:block}
 .cbody{padding:0 14px 14px}
 video{display:block;width:100%;aspect-ratio:16/9;background:#000;border-radius:10px}
 audio{display:block;width:100%;margin:4px 0}
+.acover{display:block;width:100%;border-radius:10px;margin-bottom:8px}
 .soon{display:flex;align-items:center;justify-content:center;aspect-ratio:16/9;border-radius:10px;border:1px dashed var(--line2);font-size:12px;color:var(--hint)}
 .crow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px}
 .locked{font-size:12px;color:var(--hint);border:1px dashed var(--line);border-radius:14px;padding:12px 14px;margin-top:4px;line-height:1.8}
@@ -657,7 +658,7 @@ function classBody(d, ro) {
         // data-keep：重画页面时保留同一个播放器，正在播放的视频不会被打断
         h += '<div class="cbody">' + (c.video
           ? /\.(mp3|m4a|aac|wav)(\?|$)/i.test(c.video)
-            ? '<audio data-keep="v-' + c.id + '" src="' + esc(c.video) + '" controls controlslist="nodownload" oncontextmenu="return false" preload="metadata"></audio>'
+            ? (c.cover ? '<img class="acover" src="' + esc(c.cover) + '" alt="">' : '') + '<audio data-keep="v-' + c.id + '" src="' + esc(c.video) + '" controls controlslist="nodownload" oncontextmenu="return false" preload="metadata"></audio>'
           : '<video data-keep="v-' + c.id + '" src="' + esc(c.video) + '"' + (c.cover ? ' poster="' + esc(c.cover) + '"' : '') + ' controls controlslist="nodownload" oncontextmenu="return false" preload="metadata" playsinline webkit-playsinline x5-playsinline></video>'
           : '<div class="soon">视频即将上线</div>');
         h += '<div class="crow">' + (done[c.id] ? '<span class="hint">星球上已经为这节课长出了一株小草</span>'
