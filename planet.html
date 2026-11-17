@@ -141,6 +141,17 @@ video{display:block;width:100%;aspect-ratio:16/9;background:#000;border-radius:1
 .form{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:26px;width:100%}
 .form .input{width:260px}
 .form .lab{width:260px;font-size:11.5px;color:var(--ink3);letter-spacing:.06em;margin-bottom:-6px;padding-left:16px}
+.agree{width:260px;display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink2);padding-left:6px;margin-top:2px;cursor:pointer}
+.agree .link{font-size:12.5px;margin-left:2px}
+.agreebox{flex:none;width:22px;height:22px;border-radius:6px;border:1.5px solid var(--accent);background:transparent;color:#fff;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+.agreebox.on{background:var(--accent)}
+.sheet.terms{max-width:420px;text-align:left;display:flex;flex-direction:column;max-height:86vh}
+.sheet.terms>.serif,.sheet.terms>.links{text-align:center}
+.sheet.terms .btn{align-self:center}
+.termsbody{overflow-y:auto;margin:14px 0 16px;padding-right:4px;-webkit-overflow-scrolling:touch}
+.termsbody .tsq{font-size:13.5px;font-weight:500;color:#253544;margin-top:12px}
+.termsbody .tsq:first-child{margin-top:0}
+.termsbody .tsa{font-size:13px;line-height:1.85;color:#4A5B6B;margin-top:3px}
 .links{display:flex;gap:18px;justify-content:center;margin-top:18px;flex-wrap:wrap}
 .okmsg{font-size:11.5px;color:#6F9A82;margin-top:6px;font-weight:300;text-align:center;line-height:1.8}
 
@@ -471,10 +482,34 @@ function viewRegister() {
   return '<div class="wrap">' + topBar(false) + previewBanner() +
     title('欢迎来到<br>你的星球', '这是你专属的注册链接。<br>设置一个登录邮箱和密码，以后换手机也能找回星球。') +
     planetHTML([], { plain: true }) +
-    '<div class="form" style="margin-top:0">' + emailInput() + pwInput('设置密码', true) + msg() +
+    '<div class="form" style="margin-top:0">' + emailInput() + pwInput('设置密码', true) +
+    '<div class="agree"><button class="agreebox' + (S.agree ? ' on' : '') + '" data-act="agree" role="checkbox" aria-checked="' + (S.agree ? 'true' : 'false') + '" aria-label="同意会员须知">' + (S.agree ? '✓' : '') + '</button>' +
+    '<span><span data-act="agree">我已阅读并同意</span><button class="link" data-act="terms">《会员须知》</button></span></div>' + msg() +
     '<button class="btn" style="margin-top:12px" data-act="register"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? '正在准备星球…' : '创建我的星球') + '</button></div>' +
     '<div class="links"><button class="link" data-act="tologin">已经注册过了？直接登录</button></div>' +
+    (S.termsOpen ? termsSheet() : '') +
     '</div>';
+}
+
+// 首次注册要同意的《会员须知》。改了内容就把 TERMS_VER 换成新日期，云函数会把会员同意的版本记下来。
+var TERMS_VER = '2026-11-17';
+var TERMS = [
+  ['这是成长陪伴，不是治疗', '启思摘星提供的是成长教育内容和同行陪伴。课程、今日星情和星际领航员的回信，都不是心理治疗、医疗诊断或危机干预，也不能替代它们。'],
+  ['财商内容不是个人化建议', '课程里关于财务、保险、投资和职业的内容，是一般性的知识与经验分享，不构成针对你个人的投资、保险、法律或税务建议。'],
+  ['你的选择由你决定', '我们会认真陪你看清自己，但人生里的每一个决定都由你自己做出，结果也由你自己承担。我们不对学习效果或某种结果作出保证。'],
+  ['需要更多帮助的时候', '如果你正处在严重的情绪困扰里，或者有伤害自己的念头，请尽快联系当地的专业医疗机构或紧急援助热线。回信通常需要一些时间，无法应对紧急情况。'],
+  ['我们保存什么', '你的注册邮箱、星球名、测评结果、选择的星际领航员、今日星情、信件和听课记录。这些内容只有三位星际领航员能看到，只用来陪伴你和回信，不会提供给第三方。想删除自己的记录，随时告诉我们。'],
+  ['课程请留给自己', '课程视频和作业模板仅供你本人学习，请不要录屏、转发，或把账号借给别人。']
+];
+function termsSheet() {
+  return '<div class="modal" data-act="termsclose"><div class="sheet terms" data-stop="1">' +
+    '<div class="serif" style="font-size:17px;font-weight:500">会员须知</div>' +
+    '<div class="termsbody">' + TERMS.map(function (t, i) {
+      return '<div class="tsq">' + (i + 1) + '. ' + t[0] + '</div><div class="tsa">' + t[1] + '</div>';
+    }).join('') + '</div>' +
+    '<button class="btn sm" data-act="termsok">我已阅读并同意</button>' +
+    '<div class="links" style="margin-top:12px"><button class="link" data-act="termsclose">关闭</button></div>' +
+    '</div></div>';
 }
 
 function viewForgot() {
@@ -524,7 +559,7 @@ function viewProfile() {
     // 更换（不是第一次选）时要写原因，主理人会看到
     if (m.guide && S.draftGuide !== m.guide) {
       h += '<div class="qsub" style="margin:14px 0 6px;color:var(--ink3)">想更换的原因（星际领航员会看到，帮助我们做得更好）</div>' +
-        '<textarea id="f-reason" class="ta" rows="3" maxlength="300" placeholder="写一两句就好">' + esc(S.draftReason) + '</textarea>';
+        '<textarea id="f-reason" class="tsa" rows="3" maxlength="300" placeholder="写一两句就好">' + esc(S.draftReason) + '</textarea>';
     }
     h += '</div>';
   }
@@ -649,7 +684,7 @@ function moodBody(d, ro) {
       h += '<div class="picked"><div class="face"><span style="color:var(--hint);font-size:13px">✶</span><b>' + esc(S.tarot.name) + '</b></div>' +
         '<div style="font-size:12.5px;color:var(--ink2);font-weight:300;margin-top:10px;text-align:center">' + esc(S.tarot.line) + '</div>';
       if (!S.moodSaved) {
-        h += '<textarea id="f-mood" class="ta" style="max-width:260px;height:72px;margin-top:12px" maxlength="500" placeholder="接着写下此刻的心情、收获或情绪……">' + esc(S.draftMood) + '</textarea>' +
+        h += '<textarea id="f-mood" class="tsa" style="max-width:260px;height:72px;margin-top:12px" maxlength="500" placeholder="接着写下此刻的心情、收获或情绪……">' + esc(S.draftMood) + '</textarea>' +
           (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '') +
           '<div style="display:flex;align-items:center;gap:16px;margin-top:12px"><button class="btn sm" data-act="moodsave"' + (S.busy ? ' disabled' : '') + '>留在星球上 ✦</button><button class="link" data-act="redraw">换一张 ↻</button></div>';
       } else {
@@ -681,7 +716,7 @@ function mailBody(d, ro) {
   });
   if (ro) return h + '<div class="locked">会员期结束后，信箱暂时关闭。</div>';
   var left = d.mailLeftToday;
-  h += '<textarea id="f-mail" class="ta" style="height:90px;margin-top:6px" maxlength="1000" placeholder="写一封给星际领航员的信……"' + (left <= 0 ? ' disabled' : '') + '>' + esc(S.draftMail) + '</textarea>' +
+  h += '<textarea id="f-mail" class="tsa" style="height:90px;margin-top:6px" maxlength="1000" placeholder="写一封给星际领航员的信……"' + (left <= 0 ? ' disabled' : '') + '>' + esc(S.draftMail) + '</textarea>' +
     (S.err ? '<div class="err">' + esc(S.err) + '</div>' : '') +
     '<div style="display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap"><button class="btn sm" data-act="mail"' + (left <= 0 || S.busy ? ' disabled' : '') + '>寄出 ✉</button>' +
     '<span class="hint">' + (S.mailSent ? '信已寄出，星际领航员会在 1–3 天内回信' : (left > 0 ? '今天还可以寄 ' + left + ' 封' : '今天的 ' + DAILY + ' 封信都寄出了，明天再写吧')) + '</span></div>';
@@ -786,6 +821,10 @@ function handle(a, b) {
     case 'tab': var i = +b.getAttribute('data-i'); S.tab = S.tab === i ? -1 : i; S.tabAnim = S.tab >= 0; S.err = ''; S.mailSent = false; return render();
     case 'course': S.openCourse = S.openCourse === id ? '' : id; return render();
     case 'showpw': S.showPw = !S.showPw; return render();
+    case 'agree': S.agree = !S.agree; S.err = ''; return render();
+    case 'terms': S.termsOpen = true; return render();
+    case 'termsclose': S.termsOpen = false; return render();
+    case 'termsok': S.termsOpen = false; S.agree = true; S.err = ''; return render();
 
     case 'tologin': S.screen = 'login'; S.err = ''; S.ok = ''; S.draftPw = ''; S.draftPw2 = ''; cleanUrl(); return render();
     case 'toforgot': S.screen = 'forgot'; S.forgotStep = 1; S.err = ''; S.ok = ''; return render();
@@ -797,7 +836,8 @@ function handle(a, b) {
     case 'register':
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { S.err = '邮箱格式好像不太对'; return render(); }
       if (newPwError()) { S.err = newPwError(); return render(); }
-      return act('register', { code: S.regCode, email: email, password: S.draftPw }).then(function (d) { cleanUrl(); go(d); }, function () {});
+      if (!S.agree) { S.err = '请先阅读并勾选同意《会员须知》'; return render(); }
+      return act('register', { code: S.regCode, email: email, password: S.draftPw, agree: true, terms: TERMS_VER }).then(function (d) { cleanUrl(); go(d); }, function () {});
 
     case 'sendcode':
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { S.err = '邮箱格式好像不太对'; return render(); }

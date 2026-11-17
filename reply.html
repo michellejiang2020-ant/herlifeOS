@@ -192,6 +192,7 @@ function renderMember(m) {
   if (!m.email) {
     h += '<div class="sub" style="margin:0 0 8px">她还没有注册。可以把注册链接再发给她一次：</div>' + linkBox(regLink(m.code));
   } else {
+    h += '<div class="sub" style="margin:0 0 8px">' + (m.termsAt ? '已同意《会员须知》 · ' + when(m.termsAt) + (m.termsVer ? ' · ' + esc(m.termsVer) + ' 版' : '') : '《会员须知》上线前注册，没有同意记录') + '</div>';
     h += '<div class="row"><span class="sub" style="margin:0">她忘记密码、又收不到验证码邮件时：</span><button class="ghost" data-a="resetlink"' + (S.busy ? ' disabled' : '') + '>生成重设密码链接</button></div>';
     if (S.resetLink) h += linkBox(S.resetLink) + '<div class="sub">把这条链接发给她，7 天内有效，用一次就失效。</div>';
   }
