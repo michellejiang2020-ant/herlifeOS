@@ -95,6 +95,7 @@ body.night .stars{display:block}
 .cdone{flex:none;margin-left:auto;font-size:10.5px;color:#7FA58F;margin-top:3px}
 .cbody{padding:0 14px 14px}
 video{display:block;width:100%;aspect-ratio:16/9;background:#000;border-radius:10px}
+audio{display:block;width:100%;margin:4px 0}
 .soon{display:flex;align-items:center;justify-content:center;aspect-ratio:16/9;border-radius:10px;border:1px dashed var(--line2);font-size:12px;color:var(--hint)}
 .crow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px}
 .locked{font-size:12px;color:var(--hint);border:1px dashed var(--line);border-radius:14px;padding:12px 14px;margin-top:4px;line-height:1.8}
@@ -655,7 +656,9 @@ function classBody(d, ro) {
       if (open) {
         // data-keep：重画页面时保留同一个播放器，正在播放的视频不会被打断
         h += '<div class="cbody">' + (c.video
-          ? '<video data-keep="v-' + c.id + '" src="' + esc(c.video) + '"' + (c.cover ? ' poster="' + esc(c.cover) + '"' : '') + ' controls controlslist="nodownload" oncontextmenu="return false" preload="metadata" playsinline webkit-playsinline x5-playsinline></video>'
+          ? /\.(mp3|m4a|aac|wav)(\?|$)/i.test(c.video)
+            ? '<audio data-keep="v-' + c.id + '" src="' + esc(c.video) + '" controls controlslist="nodownload" oncontextmenu="return false" preload="metadata"></audio>'
+          : '<video data-keep="v-' + c.id + '" src="' + esc(c.video) + '"' + (c.cover ? ' poster="' + esc(c.cover) + '"' : '') + ' controls controlslist="nodownload" oncontextmenu="return false" preload="metadata" playsinline webkit-playsinline x5-playsinline></video>'
           : '<div class="soon">视频即将上线</div>');
         h += '<div class="crow">' + (done[c.id] ? '<span class="hint">星球上已经为这节课长出了一株小草</span>'
           : '<button class="btn sm" data-act="classdone" data-id="' + c.id + '"' + (c.video ? '' : ' disabled') + '>我听完了 ✦</button>');
@@ -924,10 +927,10 @@ function checkDayNight() {
 }
 setInterval(checkDayNight, 60000);
 // 视频签名地址过期（页面开着超过几个小时）后会播不了：重新取一次地址，从原来的位置接着播
-document.addEventListener('timeupdate', function (e) { if (e.target.tagName === 'VIDEO' && e.target.currentTime) e.target._at = e.target.currentTime; }, true);
+document.addEventListener('timeupdate', function (e) { if (/^(VIDEO|AUDIO)$/.test(e.target.tagName) && e.target.currentTime) e.target._at = e.target.currentTime; }, true);
 document.addEventListener('error', function (e) {
   var v = e.target;
-  if (!v || v.tagName !== 'VIDEO' || !HLOS_Store.token || (v._retry && Date.now() - v._retry < 60000)) return;
+  if (!v || !/^(VIDEO|AUDIO)$/.test(v.tagName) || !HLOS_Store.token || (v._retry && Date.now() - v._retry < 60000)) return;
   v._retry = Date.now();
   var id = (v.getAttribute('data-keep') || '').replace(/^v-/, ''), at = v.currentTime || v._at || 0;
   HLOS_Store.call('me', { token: HLOS_Store.token }).then(function (d) {
