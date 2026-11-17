@@ -2,8 +2,14 @@
 <html lang="zh-CN" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>启思摘星 Her Life OS — 人生系统主理人计划</title>
+  <meta name="description" content="启思摘星女性成长俱乐部｜Her Life OS 人生主理人计划。从内在系统、路径系统、安全系统出发，重新设计属于自己的人生系统。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://herlifeosclub.com/">
+  <meta property="og:title" content="启思摘星 Her Life OS — 人生系统主理人计划">
+  <meta property="og:description" content="每个女人，都可以成为自己人生系统的主理人。从内在、路径、安全三大系统出发，重新认识自己。">
+  <meta property="og:image" content="https://herlifeosclub.com/images/img01.jpg">
   
   <!-- 1. 采用无拦截风险、全球极速 CDN 的静态 Tailwind CSS 样式表，彻底解决 iOS Safari 脚本封杀导致的白屏 -->
   <link rel="stylesheet" href="style.css">
@@ -25,6 +31,8 @@
     #about{min-height:80vh !important;}
     .hero-overlay{background:linear-gradient(to bottom, rgba(253,251,247,0.80), rgba(253,251,247,0.55) 50%, rgba(253,251,247,0.92)) !important;}
     @media(min-width:1024px){.hero-overlay{background:linear-gradient(to right, rgba(253,251,247,0.88), rgba(253,251,247,0.35) 55%, transparent) !important;}}
+    .av-noimg{display:flex;align-items:center;justify-content:center;}
+    .av-noimg::after{content:attr(data-n);font-family:Georgia,'Songti SC',serif;font-size:14px;letter-spacing:.04em;color:#7A5C44;}
     /* 创始人小屋：网页文字版（素材取自 Maggie 设计的原图） */
     .f-modal-box{max-width:860px !important;}
     #modal-maggie .f-modal-box,#modal-maggie .f-modal-close{background:#FBF7F3;}
@@ -796,9 +804,9 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           <!-- Maggie 卡片 -->
-          <div class="bg-white rounded-2xl border border-[#EBE4DC] p-8 text-center space-y-4 shadow-sm hover:border-[#C5A880] transition-colors duration-300">
+          <div class="bg-white rounded-2xl border border-[#EBE4DC] p-8 text-center space-y-4 shadow-sm hover:border-[#C5A880] transition-colors duration-300" onclick="window.openFounderModal('maggie')" style="cursor:pointer;">
             <div class="w-24 h-24 rounded-full overflow-hidden border-2 border-white shadow-md mx-auto bg-accent-light">
-              <img src="images/img06.jpg" alt="Maggie Lin" class="w-full h-full object-cover object-top" onerror="this.src='https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200'"/>
+              <img src="images/img06.jpg" alt="Maggie Lin" class="w-full h-full object-cover object-top" onerror="var p=this.parentNode;p.classList.add('av-noimg');p.setAttribute('data-n','Maggie');this.remove();"/>
             </div>
             <div>
               <div class="font-serif text-xl font-bold text-custom-primary">Maggie</div>
@@ -809,9 +817,9 @@
           </div>
 
           <!-- Michelle 卡片 -->
-          <div class="bg-white rounded-2xl border border-[#EBE4DC] p-8 text-center space-y-4 shadow-sm hover:border-[#C5A880] transition-colors duration-300">
+          <div class="bg-white rounded-2xl border border-[#EBE4DC] p-8 text-center space-y-4 shadow-sm hover:border-[#C5A880] transition-colors duration-300" onclick="window.openFounderModal('michelle')" style="cursor:pointer;">
             <div class="w-24 h-24 rounded-full overflow-hidden border-2 border-white shadow-md mx-auto bg-accent-light">
-              <img src="images/img07.jpg" alt="Michelle Jiang" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200'"/>
+              <img src="images/img07.jpg" alt="Michelle Jiang" class="w-full h-full object-cover" onerror="var p=this.parentNode;p.classList.add('av-noimg');p.setAttribute('data-n','Michelle');this.remove();"/>
             </div>
             <div>
               <div class="font-serif text-xl font-bold text-custom-primary">Michelle</div>
@@ -824,7 +832,7 @@
           <!-- Moe 卡片(占位) -->
           <div class="bg-white rounded-2xl border border-[#EBE4DC] p-8 text-center space-y-4 shadow-sm hover:border-[#C5A880] transition-colors duration-300" onclick="window.openFounderModal('moe')" style="cursor:pointer;">
             <div class="w-24 h-24 rounded-full overflow-hidden border-2 border-white shadow-md mx-auto bg-accent-light">
-              <img src="images/img08.jpg" alt="Moe Zhang" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200'"/>
+              <img src="images/img08.jpg" alt="Moe Zhang" class="w-full h-full object-cover" onerror="var p=this.parentNode;p.classList.add('av-noimg');p.setAttribute('data-n','Moe');this.remove();"/>
             </div>
             <div>
               <div class="font-serif text-xl font-bold text-custom-primary">Moe</div>
@@ -1207,7 +1215,7 @@
               <div class="bg-[#FAF8F5] border border-[#EBE4DC]/60 p-5 rounded-xl flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                   <div class="w-10 h-10 rounded-full overflow-hidden bg-accent-light">
-                    <img src="images/img09.jpg" alt="Maggie" class="w-full h-full object-cover object-top" onerror="this.src='https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=100'" />
+                    <img src="images/img09.jpg" alt="Maggie" class="w-full h-full object-cover object-top" onerror="this.style.display='none'" />
                   </div>
                   <div>
                     <div class="text-xs font-bold text-custom-primary">Maggie Lin (幸福)</div>
@@ -1223,7 +1231,7 @@
               <div class="bg-[#FAF8F5] border border-[#EBE4DC]/60 p-5 rounded-xl flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                   <div class="w-10 h-10 rounded-full overflow-hidden bg-accent-light">
-                    <img src="images/img10.jpg" alt="Michelle" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100'" />
+                    <img src="images/img10.jpg" alt="Michelle" class="w-full h-full object-cover" onerror="this.style.display='none'" />
                   </div>
                   <div>
                     <div class="text-xs font-bold text-custom-primary">Michelle Jiang (职涯)</div>
@@ -1239,7 +1247,7 @@
               <div class="bg-[#FAF8F5] border border-[#EBE4DC]/60 p-5 rounded-xl flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                   <div class="w-10 h-10 rounded-full overflow-hidden bg-accent-light">
-                    <img src="images/img11.jpg" alt="Moe" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=crop&w=100'" />
+                    <img src="images/img11.jpg" alt="Moe" class="w-full h-full object-cover" onerror="this.style.display='none'" />
                   </div>
                   <div>
                     <div class="text-xs font-bold text-custom-primary">Moe Zhang (财务)</div>
@@ -1531,7 +1539,7 @@
           <p class="text-[10px] text-custom-primary-light">备注：姓名 + 申请主理人Coaching</p>
         </div>
 
-        <button @click="contactModalOpen = true" class="w-full py-3 rounded-full text-xs bg-custom-primary text-white hover:bg-black font-semibold tracking-widest transition-colors cursor-pointer">我知道了</button>
+        <button @click="contactModalOpen = false" class="w-full py-3 rounded-full text-xs bg-custom-primary text-white hover:bg-black font-semibold tracking-widest transition-colors cursor-pointer">我知道了</button>
       </div>
     </div>
 
