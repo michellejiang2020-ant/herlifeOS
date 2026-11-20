@@ -339,7 +339,7 @@ var HLOS_Store = (function () {
     else if (action === 'previewReply') {
       d.letters.push({ from: 'Maggie', text: '收到你的信了。（这是预览模式里的模拟回信，正式版由三位星际领航员亲自回复。）', day: s.status.day, date: s.status.today, createdAt: Date.now() });
     }
-    else if (action === 'getPdf') { return Promise.resolve({ url: 'images/wechat-qr.png' }); }
+    else if (action === 'getPdf') { return Promise.resolve({ url: 'images/wechat-qr-b612.png' }); }
     save(d); return Promise.resolve(state(d));
   }
 
